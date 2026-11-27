@@ -301,6 +301,21 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--g
 .success p { color: var(--muted); }
 .success .btn { margin-top: 1.2rem; }
 
+/* terms and conditions */
+#terms { padding: 1rem 0 4.5rem; }
+.terms { border-top: 1px solid var(--line); padding-top: 3.5rem; }
+.terms .clauses { list-style: none; margin: 0; padding: 0; max-width: 46rem; counter-reset: clause; display: grid; gap: 1.7rem; }
+.terms .clauses li { position: relative; padding-left: 3.4rem; counter-increment: clause; }
+.terms .clauses li::before {
+  content: counter(clause, decimal-leading-zero); position: absolute; left: 0; top: .1rem;
+  font: 700 .85rem ui-monospace, "Cascadia Code", Consolas, monospace; letter-spacing: .08em; color: var(--gold);
+}
+.terms .clauses li::after { content: ""; position: absolute; left: 0; top: 1.7rem; width: 1.6rem; height: 1px; background: linear-gradient(90deg, var(--gold), transparent); }
+.terms h3 { margin: 0 0 .45rem; font-size: 1.08rem; }
+.terms p { margin: 0; color: var(--muted); font-size: .98rem; }
+.terms a { text-underline-offset: .18em; }
+.terms code { background: #0b1422; border: 1px solid var(--line); border-radius: 4px; padding: .02rem .35rem; font-size: .88em; color: var(--text); }
+
 /* footer */
 .site-footer { border-top: 1px solid var(--line); background: var(--bg-2); padding: 2.5rem 0 3rem; color: var(--muted); font-size: .92rem; }
 .foot { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 2rem; }
