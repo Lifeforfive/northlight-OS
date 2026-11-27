@@ -62,7 +62,14 @@
     .btn:disabled { opacity: .4; cursor: default; }
     .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
     .linkrow { margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; }
-    footer { color: var(--muted); font-size: .85rem; padding: 2rem 0; }
+    .tools { margin-top: 2.5rem; padding-bottom: 2.5rem; border-top: 1px solid var(--line); }
+    .tools h2 { font-size: 1.4rem; margin: 1.5rem 0 .25rem; }
+    .tool { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid #d9b24c; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: .8rem; }
+    .tool h3 { margin: 0 0 .25rem; font-size: 1.05rem; }
+    .tool .meta { color: var(--muted); font-size: .9rem; margin: .25rem 0; }
+    .cmd { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; margin: .6rem 0; }
+    .cmd code { padding: .4rem .7rem; font-size: .95rem; }
+    .btn.copy { padding: .3rem .8rem; font-size: .85rem; }
   </style>
 </head>
 <body>
@@ -83,7 +90,24 @@
       <button id="restart" class="btn" type="button">Start over</button>
     </div>
 
-    <footer>Tip: on the affected PC you can also run <code>node tools/network-doctor.js</code>. It checks the router, then 1.1.1.1, then a website name, and names the first failing step. It only reads information and changes nothing.</footer>
+    <section class="tools" aria-labelledby="tools-h">
+      <h2 id="tools-h">PC &amp; network tools</h2>
+      <p class="lead">Two small read-only scripts for the affected PC. A web page cannot run them, so run them in a terminal with <a href="https://nodejs.org" rel="noopener">Node.js</a> installed, from the folder that contains <code>tools</code>. They only read information and never change a setting.</p>
+
+      <div class="tool">
+        <h3>Network doctor</h3>
+        <p class="meta">Checks the router, then 1.1.1.1, then a website name. Prints PASS or FAIL for each and names the first failing step.</p>
+        <div class="cmd"><code>node tools/network-doctor.js</code><button class="btn copy" type="button" data-cmd="node tools/network-doctor.js">Copy</button></div>
+        <p class="meta">Optional: add a website name, for example <code>node tools/network-doctor.js northlight.example</code>. <a href="tools/network-doctor.js">View source</a></p>
+      </div>
+
+      <div class="tool">
+        <h3>PC health report</h3>
+        <p class="meta">Shows the operating system, free disk space, firewall status and whether updates are current, as PASS or FAIL.</p>
+        <div class="cmd"><code>node tools/health-report.js</code><button class="btn copy" type="button" data-cmd="node tools/health-report.js">Copy</button></div>
+        <p class="meta"><a href="tools/health-report.js">View source</a></p>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -356,6 +380,19 @@
 
     path = ["start"];
     render();
+
+    // Copy buttons for the tool commands.
+    Array.prototype.forEach.call(document.querySelectorAll(".copy"), function (b) {
+      b.onclick = function () {
+        var done = function (ok) {
+          b.textContent = ok ? "Copied" : "Copy failed";
+          setTimeout(function () { b.textContent = "Copy"; }, 1500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(b.getAttribute("data-cmd")).then(function () { done(true); }, function () { done(false); });
+        } else { done(false); }
+      };
+    });
   </script>
 </body>
 </html>
