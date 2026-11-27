@@ -88,6 +88,8 @@
           <li><a href="troubleshoot.html" aria-current="page">PC &amp; network tools</a></li>
           <li><a href="staff.html">Staff access</a></li>
           <li><a href="track.html">Track request</a></li>
+          <li><a href="automation.html">Automation</a></li>
+          <li><a href="logs.html">Logs</a></li>
         </ul>
       </nav>
     </div>
@@ -331,9 +333,14 @@
       return n;
     }
 
+    // Site-wide activity log (sitelog.js loads after this script, but this only runs on clicks).
+    function tlog(event, detail, level) { if (window.NorthlightLog) window.NorthlightLog.add("tools", event, detail, { level: level || "info" }); }
+
     function go(id, answer) {
       path.push(id);
       picked.push(answer); // always pushed, so Back keeps both stacks in step
+      tlog("tree.answer", "Troubleshooter answer: " + answer);
+      if (TREE[id].type === "result") tlog("tree.result", "Troubleshooter reached: " + TREE[id].title, TREE[id].kind === "escalate" ? "warn" : "ok");
       render();
     }
 
@@ -409,10 +416,10 @@
     }
 
     backBtn.onclick = function () {
-      if (path.length > 1) { path.pop(); picked.pop(); render(); }
+      if (path.length > 1) { path.pop(); picked.pop(); tlog("tree.back", "Troubleshooter: went back one step"); render(); }
     };
     document.getElementById("restart").onclick = function () {
-      path = ["start"]; picked = []; render();
+      path = ["start"]; picked = []; tlog("tree.restart", "Troubleshooter restarted"); render();
     };
 
     path = ["start"];
@@ -422,6 +429,7 @@
     Array.prototype.forEach.call(document.querySelectorAll(".copy"), function (b) {
       b.onclick = function () {
         var done = function (ok) {
+          tlog("tool.copy", (ok ? "Copied the command: " : "Could not copy the command: ") + b.getAttribute("data-cmd"), ok ? "ok" : "warn");
           b.textContent = ok ? "Copied" : "Copy failed";
           setTimeout(function () { b.textContent = "Copy"; }, 1500);
         };
@@ -431,6 +439,7 @@
       };
     });
   </script>
+  <script src="sitelog.js"></script>
   <script src="site.js"></script>
 </body>
 </html>

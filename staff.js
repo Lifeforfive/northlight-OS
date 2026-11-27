@@ -168,6 +168,11 @@
     db.log.unshift({ t: Date.now(), text: text });
     db.log = db.log.slice(0, 30);
     save();
+    // Also record it in the site-wide log (logs.html). Fake accounts only; never passwords or codes.
+    if (window.NorthlightLog) {
+      var level = /Failed|failed|Blocked|denied|wrong/.test(text) ? "warn" : "info";
+      window.NorthlightLog.add("staff", "staff.activity", text, { level: level });
+    }
   }
 
   // ================= state =================
@@ -304,6 +309,7 @@
     db = await seed();
     save();
     state = { view: "signin", pendingId: null, sessionId: null, tab: "directory", error: "", info: "Demo data reset.", welcome: null, showJoiner: false };
+    if (window.NorthlightLog) window.NorthlightLog.add("staff", "reset", "Staff demo data reset (all users restored)", { level: "warn" });
     render();
   }
 

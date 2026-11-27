@@ -140,9 +140,14 @@
 
   // ---------- actions ----------
 
+  // Site-wide activity log (sitelog.js): ids and stages only, never names, emails or message text.
+  function slog(event, detail, level) { if (window.NorthlightLog) window.NorthlightLog.add("crm", event, detail, { level: level || "info" }); }
+
   function addLead(name, company, email, value) {
-    db.leads.unshift({ id: nid(), name: name.trim(), company: company.trim(), email: email.trim(), source: "Manual", value: Math.max(0, Number(value) || 0), status: "New", created: Date.now() });
+    var lead = { id: nid(), name: name.trim(), company: company.trim(), email: email.trim(), source: "Manual", value: Math.max(0, Number(value) || 0), status: "New", created: Date.now() };
+    db.leads.unshift(lead);
     save(); render(); toast("Lead added");
+    slog("lead.created", "Lead #" + lead.id + " added on the CRM page", "ok");
   }
 
   // Lead -> account + contact + opportunity.
@@ -160,11 +165,16 @@
     l.converted = { accountId: acc.id, contactId: c.id, oppId: o.id };
     save(); render();
     toast(l.name + " converted: " + (reused ? "existing account" : "new account") + ", contact and opportunity created");
+    slog("lead.converted", "Lead #" + l.id + " converted: " + (reused ? "existing" : "new") + " account #" + acc.id + ", contact #" + c.id + ", opportunity #" + o.id, "ok");
   }
 
   function setStage(id, stage) {
     var o = byId(db.opps, id);
-    if (o && STAGES.indexOf(stage) >= 0) { o.stage = stage; save(); render(); }
+    if (o && STAGES.indexOf(stage) >= 0) {
+      var from = o.stage;
+      o.stage = stage; save(); render();
+      slog("opportunity.stage", "Opportunity #" + o.id + " moved from " + from + " to " + stage);
+    }
   }
 
   var CASE_STATUSES = ["Open", "In progress", "Closed"];
@@ -191,6 +201,7 @@
     };
     db.cases.push(c);
     save(); render(); toast("Case " + c.ref + " created");
+    slog("case.created", "Case " + c.ref + " created (" + priority + " priority)", "ok");
   }
 
   // Changes the status and (optionally) posts a note the customer can read on the tracking page.
@@ -206,6 +217,7 @@
     }
     save(); render();
     toast(c.email ? "Update posted. " + c.ref + " shows it on the tracking page" : "Update saved (no customer email on this case)");
+    slog("case.updated", "Case " + c.ref + (changed ? " moved to " + status : " updated") + (text ? " with a message to the customer" : ""), "ok");
   }
 
   function trackingLink(c) {
@@ -214,7 +226,10 @@
 
   function copyTrackingLink(c) {
     var link = trackingLink(c);
-    var done = function (ok) { toast(ok ? "Tracking link for " + c.ref + " copied" : "Copy this link: " + link); };
+    var done = function (ok) {
+      toast(ok ? "Tracking link for " + c.ref + " copied" : "Copy this link: " + link);
+      slog("case.link", (ok ? "Tracking link copied for case " : "Tracking link could not be copied for case ") + c.ref, ok ? "info" : "warn");
+    };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(function () { done(true); }, function () { done(false); });
     else done(false);
   }
@@ -225,6 +240,7 @@
     state.tab = "leads";
     render();
     toast("Demo data reset");
+    slog("reset", "CRM demo data reset", "warn");
   }
 
   // ---------- tiles ----------
@@ -476,6 +492,13 @@
   }
 
   save(); // store the data on first load so the customer tracking page can find the sample case
+
+  // Another tab (for example the website form via the automation rules) changed the CRM data: show it right away.
+  window.addEventListener("storage", function (e) {
+    if (e.key !== KEY) return;
+    var fresh = load();
+    if (fresh) { db = fresh; render(); }
+  });
 
   $("m-count").onclick = function () { state.mode = "count"; renderChart(); };
   $("m-value").onclick = function () { state.mode = "value"; renderChart(); };

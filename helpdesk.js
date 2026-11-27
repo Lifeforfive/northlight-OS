@@ -95,6 +95,9 @@
     save();
   }
 
+  // Site-wide activity log (sitelog.js): ticket numbers and priorities only, never the ticket text.
+  function slog(event, detail, level) { if (window.NorthlightLog) window.NorthlightLog.add("helpdesk", event, detail, { level: level || "info" }); }
+
   // ---------- rendering ----------
 
   function el(tag, className, text) {
@@ -159,6 +162,7 @@
     select.addEventListener("change", function () {
       t.status = select.value;
       save();
+      slog("ticket.status", "Ticket #" + t.id + " moved to " + t.status);
       render();
     });
     row.appendChild(label);
@@ -217,6 +221,7 @@
       created: Date.now()
     });
     save();
+    slog("ticket.created", "Ticket #" + nextId + " created on the help desk page (P" + priorityFor(impact, urgency) + ")", "ok");
     e.target.reset();
     updatePreview();
     render();
@@ -226,8 +231,16 @@
   $("reset").addEventListener("click", function () {
     tickets = fakeData();
     save();
+    slog("reset", "Help desk demo data reset", "warn");
     render();
     toast("Demo data reset");
+  });
+
+  // Another tab (for example the website form or the automation rules) changed the tickets: show them right away.
+  window.addEventListener("storage", function (e) {
+    if (e.key !== STORAGE_KEY) return;
+    var list = load();
+    if (list) { tickets = list; render(); }
   });
 
   updatePreview();

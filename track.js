@@ -223,11 +223,15 @@
     setErr(refEl, refErr, a); setErr(emailEl, emailErr, b);
     if (a || b) { (a ? refEl : emailEl).focus(); return; }
     var r = find(refEl.value, emailEl.value);
+    // Site-wide log (sitelog.js): the reference only, never the email.
+    var ref = refEl.value.trim().toUpperCase().slice(0, 12);
     if (!r) {
+      if (window.NorthlightLog) window.NorthlightLog.add("track", "lookup.failed", "Request lookup for " + ref + " found nothing", { level: "warn" });
       formErr.hidden = false;
       formErr.textContent = "We could not find a request with that reference and email. Check both and try again, or contact us and we will help.";
       return;
     }
+    if (window.NorthlightLog) window.NorthlightLog.add("track", "lookup.found", "Request " + r.ref + " looked up (status step " + (r.step + 1) + " of 3)", { level: "ok" });
     current = { ref: refEl.value, email: emailEl.value, signature: "" };
     $("lookup-window").hidden = true;
     render(r);
@@ -247,7 +251,10 @@
     if (!r) return;
     var changed = signature(r) !== current.signature;
     if (changed || !quiet) render(r, { quiet: true });
-    if (changed && announce) toast("Your request has a new update");
+    if (changed && announce) {
+      toast("Your request has a new update");
+      if (window.NorthlightLog) window.NorthlightLog.add("track", "live.update", "Request " + r.ref + " changed while it was being watched (now step " + (r.step + 1) + " of 3)", { level: "info" });
+    }
   }
   // Another tab (the CRM or help desk) changed the data: show it right away.
   window.addEventListener("storage", function (e) { if (e.key === CRM_KEY || e.key === HD_KEY) refresh(true, true); });

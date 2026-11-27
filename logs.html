@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Logs · Northlight Studio</title>
+  <meta name="description" content="Sign up to read the flight recorder: every event that happened on the Northlight Studio website.">
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #0f1b2d; --panel: #16253b; --panel-2: #1c2f4a; --line: #2a4060; --text: #f4f1ea; --muted: #a9b6c7;
+      --accent: #f5b942; --accent-ink: #1b1403; --gold: #d9b24c; --ok: #4ec9a0; --bad: #ff7a6b; --blue: #6fb7ff; --violet: #a78bfa;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.55; }
+    a { color: var(--accent); }
+    [hidden] { display: none !important; }
+    .wrap { max-width: 62rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+    p { margin: 0 0 .7rem; }
+    .meta { color: var(--muted); font-size: .88rem; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 1.4rem; margin-bottom: 1.1rem; }
+    .learning { background: #2b2410; border: 1px solid var(--accent); border-radius: 10px; padding: .8rem 1rem; margin-bottom: 1.1rem; color: #ffe9b8; font-size: .92rem; }
+    .learning strong { color: var(--accent); }
+
+    /* forms */
+    label { display: block; font-size: .88rem; color: var(--muted); margin-bottom: .25rem; }
+    input, select { width: 100%; padding: .65rem .8rem; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 9px; }
+    input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+    [aria-invalid="true"] { border-color: var(--bad); background: #1d1a24; }
+    .field { margin-bottom: .95rem; max-width: 26rem; }
+    .error { display: flex; gap: .45rem; margin: .35rem 0 0; color: #ff9a8d; font-size: .88rem; font-weight: 600; }
+    .error::before { content: "!"; flex: none; width: 1.1rem; height: 1.1rem; margin-top: .15rem; border-radius: 50%; background: var(--bad); color: #2a0a06; font-size: .72rem; font-weight: 800; display: grid; place-items: center; }
+    .general { background: #2a1517; border: 1px solid var(--bad); border-left-width: 5px; border-radius: 10px; padding: .6rem .9rem; margin-bottom: .9rem; color: #ffd0c9; max-width: 26rem; }
+    .btn { font: inherit; font-weight: 700; cursor: pointer; background: transparent; color: var(--text); border: 1px solid var(--line); border-radius: 9px; padding: .55rem 1.1rem; }
+    .btn:hover:not(:disabled) { border-color: var(--gold); }
+    .btn:disabled { opacity: .5; cursor: progress; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+    .btn.small { padding: .3rem .8rem; font-size: .85rem; font-weight: 600; }
+
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-bottom: 1rem; }
+    .seg button { border: 0; border-radius: 0; background: transparent; }
+    .seg button[aria-pressed="true"] { background: rgba(217, 178, 76, .16); color: var(--gold); }
+    .teaser { font-size: 1.02rem; margin-bottom: 1rem; }
+    .perks { margin: 0 0 1.2rem; padding-left: 1.1rem; color: var(--muted); font-size: .92rem; }
+
+    /* dashboard */
+    .bar { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; margin-bottom: 1rem; }
+    .bar .grow { flex: 1; }
+    .who { font-family: ui-monospace, Consolas, monospace; color: var(--ok); }
+    .live { display: inline-flex; align-items: center; gap: .4rem; font: 700 .75rem ui-monospace, Consolas, monospace; letter-spacing: .08em; color: var(--muted); }
+    .live::before { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: var(--bad); box-shadow: 0 0 0 0 rgba(255, 122, 107, .6); animation: rec 2.2s ease-in-out infinite; }
+    .live.on { color: var(--ok); }
+    .live.on::before { background: var(--ok); }
+    @keyframes rec { 50% { box-shadow: 0 0 0 7px rgba(255, 122, 107, 0); } }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .7rem; margin-bottom: 1.1rem; }
+    @media (max-width: 44rem) { .stats { grid-template-columns: repeat(2, 1fr); } }
+    .stat { background: var(--panel); border: 1px solid var(--line); border-top: 3px solid var(--ok); border-radius: 10px; padding: .7rem 1rem; }
+    .stat:nth-child(2) { border-top-color: var(--blue); } .stat:nth-child(3) { border-top-color: var(--bad); } .stat:nth-child(4) { border-top-color: var(--violet); }
+    .stat .n { font: 800 1.6rem ui-monospace, Consolas, monospace; line-height: 1.2; }
+    .stat .l { color: var(--muted); font-size: .82rem; }
+    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+    @media (max-width: 52rem) { .charts { grid-template-columns: 1fr; } }
+    .charts h3 { font-size: .85rem; color: var(--muted); font-weight: 600; margin: 0 0 .4rem; text-transform: uppercase; letter-spacing: .06em; }
+    svg { display: block; width: 100%; height: auto; }
+    svg .lbl { fill: var(--muted); font-family: inherit; }
+    svg .val { fill: var(--text); font-weight: 700; font-family: inherit; }
+    svg .axis { stroke: var(--gold); stroke-width: 1.5; }
+
+    .filters { display: grid; grid-template-columns: 1fr auto auto; gap: .6rem; align-items: end; margin-bottom: .8rem; }
+    @media (max-width: 44rem) { .filters { grid-template-columns: 1fr 1fr; } .filters .search { grid-column: 1 / -1; } }
+    .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .8rem; }
+    .chip { font: inherit; font-size: .82rem; cursor: pointer; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: .2rem .8rem; transition: all .2s ease; }
+    .chip::before { content: ""; display: inline-block; width: .55rem; height: .55rem; border-radius: 50%; background: var(--c); margin-right: .4rem; opacity: .35; transition: opacity .2s ease; }
+    .chip.on { color: var(--text); border-color: var(--c); background: rgba(255, 255, 255, .04); }
+    .chip.on::before { opacity: 1; }
+    .count { color: var(--muted); font-size: .85rem; margin-bottom: .6rem; }
+
+    /* the tape */
+    .tape { padding-left: 1.6rem; background: radial-gradient(circle, #2a4060 2.2px, transparent 3px) 4px 0 / 14px 20px repeat-y; }
+    .day { position: sticky; top: calc(var(--sx-header-h, 64px) + 2px); z-index: 2; background: #0b1422; color: var(--gold); font: 700 .78rem ui-monospace, Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; padding: .35rem .6rem; margin: .9rem 0 .3rem; border-radius: 6px; }
+    .day:first-child { margin-top: 0; }
+    details.ev { border-left: 3px solid var(--c); margin-bottom: 2px; background: rgba(255, 255, 255, .02); border-radius: 0 6px 6px 0; }
+    details.ev:hover { background: rgba(255, 255, 255, .05); }
+    details.ev summary { cursor: pointer; list-style: none; display: grid; grid-template-columns: 4.6rem 1rem 5.6rem 1fr; gap: .5rem; align-items: baseline; padding: .35rem .6rem; font-family: ui-monospace, Consolas, monospace; font-size: .82rem; }
+    details.ev summary::-webkit-details-marker { display: none; }
+    details.ev summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    @media (max-width: 40rem) { details.ev summary { grid-template-columns: 4.4rem 1rem 1fr; } details.ev .src { display: none; } }
+    details.ev time { color: var(--muted); }
+    details.ev .mark { font-weight: 800; text-align: center; }
+    details.ev.lv-ok .mark { color: var(--ok); } details.ev.lv-warn .mark { color: var(--accent); } details.ev.lv-error .mark { color: var(--bad); } details.ev.lv-info .mark { color: var(--muted); }
+    details.ev .src { color: var(--c); font-weight: 700; }
+    details.ev .txt { color: #d7dfe9; word-break: break-word; }
+    details.ev[open] { background: rgba(255, 255, 255, .06); }
+    pre.json { margin: 0; padding: .6rem .9rem .8rem; overflow-x: auto; color: #b8e5d2; font-size: .78rem; }
+    .more { margin-top: .8rem; }
+
+    /* banner art: heartbeat */
+    .ecg-base { fill: none; stroke: #2a4060; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .ecg-line { fill: none; stroke: #4ec9a0; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 90 310; animation: ecg 2.6s linear infinite; filter: drop-shadow(0 0 5px rgba(78, 201, 160, .8)); }
+    @keyframes ecg { from { stroke-dashoffset: 90; } to { stroke-dashoffset: -400; } }
+    .sx-art.beat .ecg-base { animation: flashline 1.2s ease-out; }
+    @keyframes flashline { from { stroke: #fff; } }
+    .rec-text { fill: #a9b6c7; font-size: 11px; font-weight: 700; letter-spacing: .1em; }
+    @media (prefers-reduced-motion: reduce) { .ecg-line, .live::before, .sx-art.beat .ecg-base { animation: none !important; } }
+  </style>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body class="sx" data-page="logs" style="--sx-max:62rem">
+  <a class="sx-skip" href="#sx-main">Skip to content</a>
+  <header class="sx-header">
+    <div class="sx-wrap">
+      <a class="sx-brand" href="index.html"><img src="logo.svg" width="34" height="34" alt="Northlight Studio logo"><span>Northlight <b>Studio</b></span></a>
+      <button class="sx-toggle" id="sx-toggle" type="button" aria-expanded="false" aria-controls="sx-nav" aria-label="Menu"><span></span></button>
+      <nav class="sx-nav" id="sx-nav" aria-label="Main">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="helpdesk.html">Help desk</a></li>
+          <li><a href="crm.html">CRM</a></li>
+          <li><a href="troubleshoot.html">PC &amp; network tools</a></li>
+          <li><a href="staff.html">Staff access</a></li>
+          <li><a href="track.html">Track request</a></li>
+          <li><a href="automation.html">Automation</a></li>
+          <li><a href="logs.html" aria-current="page">Logs</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <section class="sx-banner" aria-labelledby="sx-h1">
+    <div class="sx-stars" aria-hidden="true"></div>
+    <canvas class="sx-aurora" data-palette="logs" aria-hidden="true"></canvas>
+    <svg class="sx-art" viewBox="0 0 220 140" aria-hidden="true" focusable="false">
+      <circle class="sx-blip" cx="22" cy="24" r="6" fill="#ff7a6b"/>
+      <text class="rec-text" x="34" y="28">REC</text>
+      <path class="ecg-base" pathLength="400" d="M8 84 H62 l8 -6 l8 14 l10 -56 l10 90 l10 -48 l6 6 H212"/>
+      <path class="ecg-line" pathLength="400" d="M8 84 H62 l8 -6 l8 14 l10 -56 l10 90 l10 -48 l6 6 H212"/>
+    </svg>
+    <div class="sx-wrap sx-banner-inner">
+      <p class="sx-eyebrow">Flight recorder</p>
+      <h1 id="sx-h1">Logs</h1>
+      <p class="sx-lead">Every page opened, form sent, rule run and status changed on this website, written down as it happens. Create a free account to read it all.</p>
+    </div>
+  </section>
+
+  <main class="wrap" id="sx-main">
+    <div class="learning" role="note">
+      <strong>Learning model:</strong> accounts and logs are kept in this browser's localStorage, so anyone who can open the browser's developer tools can read them. A real system keeps both on a server. The log is append-only (no delete button) and never records passwords or message text. All data is fake.
+    </div>
+
+    <!-- sign up / sign in -->
+    <div class="panel sx-rise" id="gate" data-win="access.log" data-tone="violet" data-skin="glass" hidden>
+      <p class="teaser" id="teaser"></p>
+      <p id="gate-msg" class="meta"></p>
+      <ul class="perks">
+        <li>Filter by part of the site, level or time, and search every line</li>
+        <li>Charts of events by source and per hour, updated live</li>
+        <li>Export the log as CSV or JSON</li>
+      </ul>
+      <div class="seg" role="group" aria-label="Account">
+        <button class="btn" id="tab-signup" type="button" aria-pressed="true">Create account</button>
+        <button class="btn" id="tab-signin" type="button" aria-pressed="false">Sign in</button>
+      </div>
+
+      <form id="signup-form" novalidate>
+        <div class="field"><label for="su-name">Choose a username</label><input id="su-name" autocomplete="username" maxlength="24" aria-describedby="su-name-err"><p class="error" id="su-name-err" hidden></p></div>
+        <div class="field"><label for="su-pass">Choose a password (8+ characters)</label><input id="su-pass" type="password" autocomplete="new-password" aria-describedby="su-pass-err"><p class="error" id="su-pass-err" hidden></p></div>
+        <div class="field"><label for="su-pass2">Type the password again</label><input id="su-pass2" type="password" autocomplete="new-password" aria-describedby="su-pass2-err"><p class="error" id="su-pass2-err" hidden></p></div>
+        <button class="btn primary" id="su-go" type="submit">Create account and open the logs</button>
+        <p class="meta" style="margin-top:.7rem">Use a made-up password. Your password is hashed in the browser (PBKDF2 with Web Crypto) and never stored as text.</p>
+      </form>
+
+      <form id="signin-form" novalidate hidden>
+        <div class="general" id="si-general" role="alert" hidden></div>
+        <div class="field"><label for="si-name">Username</label><input id="si-name" autocomplete="username" maxlength="24" aria-describedby="si-name-err"><p class="error" id="si-name-err" hidden></p></div>
+        <div class="field"><label for="si-pass">Password</label><input id="si-pass" type="password" autocomplete="current-password" aria-describedby="si-pass-err"><p class="error" id="si-pass-err" hidden></p></div>
+        <button class="btn primary" id="si-go" type="submit">Sign in</button>
+      </form>
+    </div>
+
+    <!-- the recorder -->
+    <div id="app" hidden>
+      <div class="bar">
+        <span>Signed in as <span class="who" id="who"></span></span>
+        <span class="live" id="live" aria-live="polite">LIVE</span>
+        <span class="grow"></span>
+        <button class="btn small" id="export-csv" type="button">Export CSV</button>
+        <button class="btn small" id="export-json" type="button">Export JSON</button>
+        <button class="btn small" id="signout" type="button">Sign out</button>
+      </div>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="panel" data-win="overview" data-tone="teal" data-skin="neon">
+        <div class="charts">
+          <div><h3>Events by part of the site</h3><div id="chart-sources"></div></div>
+          <div><h3>Events per hour (last 24 hours)</h3><div id="chart-hours"></div></div>
+        </div>
+      </div>
+
+      <div class="panel" data-win="event-tape" data-tone="gold" data-skin="terminal">
+        <div class="filters">
+          <div class="search"><label for="q">Search</label><input id="q" type="search" placeholder="e.g. ticket, R3, converted" autocomplete="off"></div>
+          <div><label for="level">Level</label>
+            <select id="level"><option value="all">All levels</option><option value="ok">Done (ok)</option><option value="info">Info</option><option value="warn">Warnings</option><option value="error">Errors</option></select></div>
+          <div><label for="range">When</label>
+            <select id="range"><option value="all">Everything</option><option value="today">Today</option><option value="hour">Last hour</option></select></div>
+        </div>
+        <div class="chips" id="chips" role="group" aria-label="Parts of the site"></div>
+        <p class="count" id="count" aria-live="polite"></p>
+        <div class="tape" id="tape"></div>
+        <button class="btn more" id="more" type="button" hidden>Show more</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="sitelog.js"></script>
+  <script src="logs.js"></script>
+  <script src="site.js"></script>
+</body>
+</html>

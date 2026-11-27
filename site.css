@@ -71,7 +71,7 @@ html { scroll-behavior: smooth; }
 .sx-toggle[aria-expanded="true"] span::before { top: 0; transform: rotate(45deg); }
 .sx-toggle[aria-expanded="true"] span::after { top: 0; transform: rotate(-45deg); }
 
-@media (max-width: 56rem) {
+@media (max-width: 66rem) {
   .sx-toggle { display: block; }
   .sx-nav {
     position: absolute; left: 0; right: 0; top: var(--sx-header-h);
@@ -247,12 +247,16 @@ body.sx[data-page="helpdesk"] { background-image: radial-gradient(44rem 30rem at
 body.sx[data-page="crm"]      { background-image: radial-gradient(44rem 30rem at 100% 60%, rgba(217, 178, 76, .09), transparent 65%); background-attachment: fixed; }
 body.sx[data-page="tools"]    { background-image: radial-gradient(44rem 30rem at 50% 100%, rgba(111, 183, 255, .09), transparent 65%); background-attachment: fixed; }
 body.sx[data-page="track"]    { background-image: radial-gradient(44rem 30rem at 0% 70%, rgba(111, 183, 255, .09), transparent 65%), radial-gradient(36rem 26rem at 100% 20%, rgba(217, 178, 76, .06), transparent 65%); background-attachment: fixed; }
+body.sx[data-page="auto"]     { background-image: radial-gradient(44rem 30rem at 100% 55%, rgba(217, 178, 76, .08), transparent 65%), radial-gradient(34rem 26rem at 0% 15%, rgba(78, 201, 160, .06), transparent 65%); background-attachment: fixed; }
+body.sx[data-page="logs"]     { background-image: radial-gradient(44rem 30rem at 0% 60%, rgba(78, 201, 160, .09), transparent 65%), radial-gradient(34rem 26rem at 100% 10%, rgba(167, 139, 250, .07), transparent 65%); background-attachment: fixed; }
 body.sx[data-page="staff"]    { background-image: radial-gradient(44rem 30rem at 100% 40%, rgba(167, 139, 250, .1), transparent 65%); background-attachment: fixed; }
 
 /* ---------- banner signature art (one per page) ---------- */
 .sx-art { position: absolute; right: max(2rem, calc((100% - var(--sx-max, 68rem)) / 2 + 1rem)); top: 50%; width: 12.5rem; height: auto; transform: translateY(-50%); z-index: 0; opacity: .95; pointer-events: none; }
 .sx-banner-inner { position: relative; z-index: 1; }
 @media (max-width: 52rem) { .sx-art { display: none; } }
+/* while the banner art is visible, keep long headlines from running under it */
+@media (min-width: 52.01rem) { .sx-banner h1 { max-width: calc(100% - 14rem); } }
 .sx-art * { transform-box: view-box; transform-origin: 50% 50%; }
 .sx-ping { animation: sx-ping 4s ease-out infinite; }
 @keyframes sx-ping { from { transform: scale(.4); opacity: .85; } to { transform: scale(4.2); opacity: 0; } }

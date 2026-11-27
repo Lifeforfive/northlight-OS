@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "note": "Automation rules. Rules for the same trigger run in order. Nothing is really sent: alerts only go to the outbox list.",
+  "rules": [
+    {
+      "id": "R1",
+      "name": "Create a CRM lead from the website form",
+      "trigger": "form.submitted",
+      "when": null,
+      "actions": [
+        {
+          "type": "crm.createLead",
+          "source": "Website",
+          "valueByTopic": {
+            "Brand identity": 8000,
+            "Product & app design": 15000,
+            "Website or design system": 12000,
+            "Something else": 3000
+          }
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "name": "Create a help desk ticket from the website form",
+      "trigger": "form.submitted",
+      "when": null,
+      "actions": [
+        { "type": "helpdesk.createTicket" }
+      ]
+    },
+    {
+      "id": "R3",
+      "name": "Urgent message: make the ticket P1 and alert the on-call team",
+      "trigger": "form.submitted",
+      "when": { "field": "message", "containsWord": "urgent" },
+      "actions": [
+        { "type": "ticket.setPriority", "priority": 1 },
+        {
+          "type": "outbox.add",
+          "channel": "email",
+          "to": "oncall@northlight.example",
+          "subject": "URGENT website request #{ticket.id}: {data.topic}",
+          "body": "{data.name} wrote: {data.message}\nTicket #{ticket.id} is now P1. Reply to {data.email}."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Automation · Northlight Studio</title>
+  <meta name="description" content="The automation rules behind the website form, the alert outbox and the rule log.">
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #0f1b2d; --panel: #16253b; --line: #2a4060; --text: #f4f1ea; --muted: #a9b6c7;
+      --accent: #f5b942; --accent-ink: #1b1403; --gold: #d9b24c; --ok: #4ec9a0; --bad: #ff7a6b; --blue: #6fb7ff;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.55; }
+    a { color: var(--accent); }
+    .wrap { max-width: 60rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+    h2 { font-size: 1.2rem; margin: 0 0 .6rem; }
+    p { margin: 0 0 .7rem; }
+    .meta { color: var(--muted); font-size: .88rem; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 1.4rem; margin-bottom: 1.1rem; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; align-items: start; }
+    @media (max-width: 56rem) { .grid2 { grid-template-columns: 1fr; } }
+
+    /* rules */
+    .rule { border: 1px solid var(--line); border-left: 4px solid var(--gold); border-radius: 12px; padding: .8rem 1rem; margin-bottom: .7rem; background: rgba(255, 255, 255, .02); }
+    .rule h3 { margin: 0 0 .3rem; font-size: 1rem; display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+    .rid { font: 800 .75rem ui-monospace, Consolas, monospace; background: var(--gold); color: var(--accent-ink); padding: .1rem .5rem; border-radius: 6px; }
+    .rule dl { display: grid; grid-template-columns: max-content 1fr; gap: .15rem .8rem; margin: 0; font-size: .9rem; }
+    .rule dt { color: var(--muted); }
+    .rule dd { margin: 0; }
+    .rule ol { margin: 0; padding-left: 1.1rem; }
+    code { background: #0b1422; border: 1px solid var(--line); border-radius: 4px; padding: .05rem .35rem; font-size: .88em; }
+
+    /* forms */
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
+    @media (max-width: 40rem) { .row { grid-template-columns: 1fr; } }
+    .field { margin-bottom: .9rem; }
+    label { display: block; font-size: .88rem; color: var(--muted); margin-bottom: .25rem; }
+    input, select, textarea { width: 100%; padding: .65rem .8rem; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 9px; }
+    textarea { min-height: 5rem; resize: vertical; }
+    input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+    [aria-invalid="true"] { border-color: var(--bad); }
+    .error { color: #ff9a8d; font-size: .88rem; font-weight: 600; margin: .3rem 0 0; }
+    .error[hidden] { display: none; }
+    .btns { display: flex; gap: .55rem; flex-wrap: wrap; }
+    .btn { font: inherit; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; background: transparent; color: var(--text); border: 1px solid var(--line); border-radius: 9px; padding: .55rem 1rem; }
+    .btn:hover { border-color: var(--gold); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+    .btn.small { padding: .3rem .75rem; font-size: .85rem; font-weight: 600; }
+    .result { margin-top: 1rem; border: 1px solid var(--line); border-radius: 12px; padding: .8rem 1rem; background: rgba(255, 255, 255, .03); }
+    .result[hidden] { display: none; }
+    .result ul { margin: .4rem 0 0; padding-left: 1.1rem; }
+
+    /* outbox + log */
+    .empty { color: var(--muted); }
+    details.mail { border: 1px solid var(--line); border-radius: 10px; margin-bottom: .55rem; background: rgba(255, 255, 255, .02); }
+    details.mail summary { cursor: pointer; padding: .6rem .8rem; display: grid; gap: .15rem; }
+    details.mail .sub { font-weight: 700; }
+    details.mail .body { padding: 0 .8rem .8rem; white-space: pre-wrap; color: #cdd7e3; font-size: .92rem; }
+    .badge { display: inline-block; font-size: .7rem; font-weight: 800; padding: .08rem .55rem; border-radius: 999px; color: #0b1422; white-space: nowrap; }
+    .b-ok { background: var(--ok); } .b-skip { background: #8fa8c8; } .b-fail { background: var(--bad); } .b-queue { background: var(--accent); }
+    .log { list-style: none; margin: 0; padding: 0; font-family: ui-monospace, Consolas, monospace; font-size: .82rem; }
+    .log li { display: grid; grid-template-columns: auto auto 1fr; gap: .2rem .6rem; align-items: baseline; padding: .45rem 0; border-bottom: 1px solid var(--line); }
+    .log time { color: var(--muted); }
+    .log .d { grid-column: 3; color: #cdd7e3; word-break: break-word; }
+    .log li.new { animation: flash 1.6s ease-out; }
+    @keyframes flash { from { background: rgba(217, 178, 76, .22); } }
+    .note { margin-top: .8rem; }
+    @media (prefers-reduced-motion: reduce) { .log li.new { animation: none; } }
+  </style>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body class="sx" data-page="auto" style="--sx-max:60rem">
+  <a class="sx-skip" href="#sx-main">Skip to content</a>
+  <header class="sx-header">
+    <div class="sx-wrap">
+      <a class="sx-brand" href="index.html"><img src="logo.svg" width="34" height="34" alt="Northlight Studio logo"><span>Northlight <b>Studio</b></span></a>
+      <button class="sx-toggle" id="sx-toggle" type="button" aria-expanded="false" aria-controls="sx-nav" aria-label="Menu"><span></span></button>
+      <nav class="sx-nav" id="sx-nav" aria-label="Main">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="helpdesk.html">Help desk</a></li>
+          <li><a href="crm.html">CRM</a></li>
+          <li><a href="troubleshoot.html">PC &amp; network tools</a></li>
+          <li><a href="staff.html">Staff access</a></li>
+          <li><a href="track.html">Track request</a></li>
+          <li><a href="automation.html" aria-current="page">Automation</a></li>
+          <li><a href="logs.html">Logs</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <section class="sx-banner" aria-labelledby="sx-h1">
+    <div class="sx-stars" aria-hidden="true"></div>
+    <canvas class="sx-aurora" data-palette="auto" aria-hidden="true"></canvas>
+    <svg class="sx-art" viewBox="0 0 220 140" aria-hidden="true" focusable="false">
+      <path d="M30 70 H190" stroke="#2a4060" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <path class="sx-flow" d="M30 70 H190" stroke="#d9b24c" stroke-width="3" stroke-dasharray="6 8" fill="none"/>
+      <circle class="sx-packet" cx="30" cy="70" r="5" fill="#4ec9a0"/>
+      <circle cx="30" cy="70" r="14" fill="#16253b" stroke="#6fb7ff" stroke-width="2.5"/>
+      <path d="M32 61 l-7 11 h6 l-3 8 l9 -12 h-6 z" fill="#6fb7ff"/>
+      <path d="M110 54 l16 16 l-16 16 l-16 -16 z" fill="#16253b" stroke="#d9b24c" stroke-width="2.5"/>
+      <path d="M103 70 l5 5 l9 -10" fill="none" stroke="#d9b24c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="174" y="58" width="32" height="24" rx="4" fill="#16253b" stroke="#4ec9a0" stroke-width="2.5"/>
+      <path d="M176 61 l14 11 l14 -11" fill="none" stroke="#4ec9a0" stroke-width="2.2" stroke-linejoin="round"/>
+      <text x="30" y="106" text-anchor="middle" font-size="10" fill="#a9b6c7">Form sent</text>
+      <text x="110" y="106" text-anchor="middle" font-size="10" fill="#a9b6c7">Rules</text>
+      <text x="190" y="106" text-anchor="middle" font-size="10" fill="#a9b6c7">Outbox</text>
+    </svg>
+    <div class="sx-wrap sx-banner-inner">
+      <p class="sx-eyebrow">Automation</p>
+      <h1 id="sx-h1">What happens when the form is sent</h1>
+      <p class="sx-lead">The rules live in <code>rules.json</code>. Each time one runs it writes a log line. Alerts only go to the outbox below: nothing is really sent.</p>
+    </div>
+  </section>
+
+  <main class="wrap" id="sx-main">
+    <div class="panel sx-rise" id="rules-panel" data-win="rules.json" data-tone="gold" data-skin="neon">
+      <p class="meta" id="rules-from">Loading rules…</p>
+      <div id="rules"></div>
+    </div>
+
+    <div class="panel sx-rise" style="--d:.08s" data-win="try-it" data-tone="teal" data-skin="glass">
+      <p class="meta">Send a pretend website message through the rules. This creates real demo records in the CRM and help desk of this browser.</p>
+      <form id="try" novalidate>
+        <div class="row">
+          <div class="field"><label for="t-name">Name</label><input id="t-name" maxlength="60" aria-describedby="t-err"></div>
+          <div class="field"><label for="t-email">Email</label><input id="t-email" type="email" maxlength="80" aria-describedby="t-err"></div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="t-topic">Topic</label>
+            <select id="t-topic"><option>Brand identity</option><option>Product &amp; app design</option><option>Website or design system</option><option>Something else</option></select>
+          </div>
+          <div class="field">
+            <label for="t-urgency">Reply wanted</label>
+            <select id="t-urgency"><option value="1">No rush</option><option value="2" selected>This week</option><option value="3">As soon as possible</option></select>
+          </div>
+        </div>
+        <div class="field"><label for="t-message">Message</label><textarea id="t-message" maxlength="1000" aria-describedby="t-err"></textarea></div>
+        <p class="error" id="t-err" role="alert" hidden></p>
+        <div class="btns">
+          <button class="btn primary" type="submit">Run the rules</button>
+          <button class="btn small" type="button" id="fill-normal">Fill a normal message</button>
+          <button class="btn small" type="button" id="fill-urgent">Fill an urgent message</button>
+        </div>
+      </form>
+      <div class="result" id="result" role="status" aria-live="polite" hidden></div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel sx-rise" style="--d:.12s" data-win="outbox" data-tone="gold" data-skin="terminal">
+        <p class="meta">Alerts waiting to be sent. In this demo they never leave the browser.</p>
+        <div id="outbox"></div>
+      </div>
+      <div class="panel sx-rise" style="--d:.16s" data-win="rule-log" data-tone="teal" data-skin="notch">
+        <p class="meta">One line for every rule that runs (newest first).</p>
+        <ul class="log" id="log"></ul>
+      </div>
+    </div>
+
+    <p class="meta note">Everything that happens across the whole website, including this log, is also recorded on the <a href="logs.html">Logs site</a> (free sign-up).</p>
+  </main>
+
+  <script src="sitelog.js"></script>
+  <script src="automation.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var $ = function (id) { return document.getElementById(id); };
+      function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
+      function when(ms) { return new Date(ms).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" }); }
+
+      // ---- rules ----
+      function conditionText(c) {
+        if (!c) return "always";
+        if (Array.isArray(c)) return c.map(conditionText).join(" and ");
+        if (c.containsWord) return "the " + c.field + ' contains the word "' + c.containsWord + '"';
+        if (c.contains) return "the " + c.field + ' contains "' + c.contains + '"';
+        if (Object.prototype.hasOwnProperty.call(c, "equals")) return "the " + c.field + ' is "' + c.equals + '"';
+        return "(unknown condition)";
+      }
+      function actionText(a) {
+        if (a.type === "crm.createLead") return "Create a lead in the CRM";
+        if (a.type === "helpdesk.createTicket") return "Create a ticket in the help desk";
+        if (a.type === "ticket.setPriority") return "Set that ticket to P" + a.priority;
+        if (a.type === "outbox.add") return "Add " + (a.channel || "email") + " alert to the outbox (to " + a.to + ")";
+        return a.type;
+      }
+      function renderRules() {
+        window.Automation.getRules().then(function (loaded) {
+          $("rules-from").textContent = loaded.rules.length + " rules, loaded from " + loaded.from + ". Rules for the same trigger run in order.";
+          var box = $("rules"); box.replaceChildren();
+          loaded.rules.forEach(function (r) {
+            var card = el("div", "rule");
+            var h = el("h3"); h.appendChild(el("span", "rid", r.id)); h.appendChild(document.createTextNode(r.name));
+            card.appendChild(h);
+            var dl = el("dl");
+            dl.appendChild(el("dt", "", "Trigger")); var d1 = el("dd"); d1.appendChild(el("code", "", r.trigger)); dl.appendChild(d1);
+            dl.appendChild(el("dt", "", "When")); dl.appendChild(el("dd", "", conditionText(r.when)));
+            dl.appendChild(el("dt", "", "Then"));
+            var d3 = el("dd"); var ol = el("ol");
+            (r.actions || []).forEach(function (a) { ol.appendChild(el("li", "", actionText(a))); });
+            d3.appendChild(ol); dl.appendChild(d3);
+            card.appendChild(dl); box.appendChild(card);
+          });
+        });
+      }
+
+      // ---- outbox + log ----
+      var seen = {};
+      function renderOutbox() {
+        var box = $("outbox"); box.replaceChildren();
+        var items = window.Automation.getOutbox().slice().reverse();
+        if (!items.length) { box.appendChild(el("p", "empty", "The outbox is empty. Send an urgent message to see an alert appear.")); return; }
+        items.slice(0, 50).forEach(function (m) {
+          var d = el("details", "mail");
+          var s = el("summary");
+          s.appendChild(el("span", "sub", m.subject));
+          var line = el("span", "meta", when(m.t) + " · to " + m.to + " · from rule " + m.rule + " · ");
+          line.appendChild(el("span", "badge b-queue", m.status));
+          s.appendChild(line);
+          d.appendChild(s);
+          d.appendChild(el("div", "body", m.body));
+          box.appendChild(d);
+        });
+      }
+      function renderLog(announce) {
+        var list = $("log"); list.replaceChildren();
+        var lines = window.Automation.getLog().slice().reverse();
+        if (!lines.length) { var li = el("li"); li.appendChild(el("span", "empty", "No rules have run yet.")); list.appendChild(li); return; }
+        lines.slice(0, 100).forEach(function (l) {
+          var li = el("li", announce && !seen[l.id] ? "new" : "");
+          li.appendChild(el("time", "", when(l.t)));
+          var cls = l.event === "rule.failed" ? "b-fail" : l.event === "rule.skipped" ? "b-skip" : l.event === "rule.ran" ? "b-ok" : "b-skip";
+          var word = l.event === "rule.failed" ? "failed" : l.event === "rule.skipped" ? "skipped" : l.event === "rule.ran" ? "ran" : "event";
+          li.appendChild(el("span", "badge " + cls, (l.rule ? l.rule + " " : "") + word));
+          li.appendChild(el("span", "d", l.detail));
+          list.appendChild(li);
+          seen[l.id] = true;
+        });
+      }
+      function refresh(announce) { renderOutbox(); renderLog(announce); }
+
+      // ---- try it ----
+      var NORMAL = { name: "Alex Brandt", email: "alex@brandt.example", topic: "Brand identity", message: "We would like a new logo and brand guidelines for our launch in spring." };
+      var URGENT = { name: "Dana Kral", email: "dana@kral.example", topic: "Website or design system", message: "Our website is down and this is urgent. Please call us back today." };
+      function fill(s) { $("t-name").value = s.name; $("t-email").value = s.email; $("t-topic").value = s.topic; $("t-message").value = s.message; $("t-err").hidden = true; }
+      $("fill-normal").onclick = function () { fill(NORMAL); };
+      $("fill-urgent").onclick = function () { fill(URGENT); };
+
+      $("try").addEventListener("submit", function (e) {
+        e.preventDefault();
+        var name = $("t-name").value.trim(), email = $("t-email").value.trim(), message = $("t-message").value.trim();
+        var err = $("t-err"), problem = "";
+        if (!name) problem = "Please enter a name.";
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) problem = "Please enter an email like name@company.com.";
+        else if (message.length < 5) problem = "Please write a short message (at least 5 characters).";
+        ["t-name", "t-email", "t-message"].forEach(function (id) { $(id).removeAttribute("aria-invalid"); });
+        if (problem) { err.textContent = problem; err.hidden = false; $(!name ? "t-name" : !/^[^\s@]+@/.test(email) ? "t-email" : "t-message").setAttribute("aria-invalid", "true"); return; }
+        err.hidden = true;
+        window.Automation.run("form.submitted", { name: name, email: email, topic: $("t-topic").value, message: message, urgency: Number($("t-urgency").value) || 2 }).then(function (ctx) {
+          var box = $("result"); box.hidden = false; box.replaceChildren();
+          box.appendChild(el("strong", "", "The rules ran (" + ctx.runs.length + "):"));
+          var ul = el("ul");
+          ctx.runs.forEach(function (r) { ul.appendChild(el("li", "", r.rule + " " + r.status + ": " + r.detail)); });
+          box.appendChild(ul);
+          if (ctx.ticket) {
+            var p = el("p", "meta", "Ticket #" + ctx.ticket.id + " is P" + ctx.ticket.priority + ". ");
+            var a = el("a", "", "Open the help desk"); a.href = "helpdesk.html"; p.appendChild(a);
+            box.appendChild(p);
+          }
+          refresh(true);
+        });
+      });
+
+      // live: other tabs (the website form) add to the outbox and log
+      window.addEventListener("storage", function (e) {
+        if (e.key === window.Automation.KEYS.outbox || e.key === window.Automation.KEYS.log) refresh(true);
+      });
+
+      renderRules();
+      refresh(false);
+    })();
+  </script>
+  <script src="site.js"></script>
+</body>
+</html>

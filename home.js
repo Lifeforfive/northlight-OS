@@ -3,6 +3,8 @@
 
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   function $(id) { return document.getElementById(id); }
+  // Site-wide activity log (sitelog.js). Only counts and topics are logged, never what the visitor typed.
+  function slog(event, detail, level) { if (window.NorthlightLog) window.NorthlightLog.add("site", event, detail, { level: level || "info" }); }
 
   // ---------- mobile menu ----------
   var toggle = $("nav-toggle"), nav = $("nav");
@@ -34,6 +36,7 @@
       var open = btn.getAttribute("aria-expanded") !== "true";
       btn.setAttribute("aria-expanded", String(open));
       item.classList.toggle("open", open);
+      slog("faq.toggled", "FAQ \"" + btn.childNodes[0].textContent.trim() + "\" " + (open ? "opened" : "closed"));
     });
   });
 
@@ -130,8 +133,7 @@
   })();
 
   // ---------- contact form -> help desk ticket ----------
-  var HELPDESK_KEY = "northlight-helpdesk-v2"; // same storage the help desk page reads
-
+  // The form no longer writes to storage itself: automation.js runs the rules in rules.json.
   var form = $("contact-form");
   var fields = {
     name: { el: $("name"), err: $("name-err"), label: "Your name" },
@@ -182,40 +184,6 @@
     el.addEventListener("change", function () { if (el.getAttribute("aria-invalid") && !check(key)) showError(key, "", false); });
   });
 
-  function priorityFor(impact, urgency) {
-    var score = impact + urgency;
-    if (score >= 5) return 1;
-    if (score === 4) return 2;
-    return 3;
-  }
-
-  // Adds the ticket to the same localStorage list the help desk page uses.
-  function createTicket(data) {
-    var list = [];
-    var raw = localStorage.getItem(HELPDESK_KEY);
-    if (raw) {
-      var parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) list = parsed;
-    }
-    var id = list.reduce(function (m, t) { return Math.max(m, Number(t && t.id) || 0); }, 1000) + 1;
-    var impact = 1; // one person asking
-    var ticket = {
-      id: id,
-      requester: data.name,
-      issue: "[Website: " + data.topic + "] " + data.message + "\nReply to: " + data.email,
-      impact: impact,
-      urgency: data.urgency,
-      priority: priorityFor(impact, data.urgency),
-      status: "New",
-      created: Date.now(),
-      source: "website",
-      email: data.email // lets the customer track it on track.html
-    };
-    list.push(ticket);
-    localStorage.setItem(HELPDESK_KEY, JSON.stringify(list));
-    return ticket;
-  }
-
   function showSummary(problems) {
     var box = $("summary");
     box.replaceChildren();
@@ -246,9 +214,14 @@
       if (msg) problems.push({ key: key, msg: msg });
     });
     showSummary(problems);
-    if (problems.length) { fields[problems[0].key].el.focus(); return; }
+    if (problems.length) {
+      slog("form.invalid", "Contact form not sent: " + problems.length + " field problem(s) shown", "warn");
+      fields[problems[0].key].el.focus();
+      return;
+    }
 
     var btn = $("send");
+    slog("form.submitted", "Contact form sent (topic: " + fields.topic.el.value + ")");
     var data = {
       name: clean(fields.name.el.value),
       email: fields.email.el.value.trim(),
@@ -258,23 +231,31 @@
     };
     btn.disabled = true;
     btn.firstChild.textContent = "Sending… ";
-    var ticket;
-    try {
-      ticket = createTicket(data);
-    } catch (err) {
-      btn.disabled = false;
-      btn.firstChild.textContent = "Send message ";
+
+    function reset() { btn.disabled = false; btn.firstChild.textContent = "Send message "; }
+
+    // The automation rules (rules.json) decide what happens: CRM lead, help desk ticket, urgent alert.
+    var runner = window.Automation ? window.Automation.run("form.submitted", data) : Promise.reject(new Error("automation.js did not load"));
+    runner.then(function (ctx) {
+      var ticket = ctx.ticket;
+      if (!ticket && ctx.errors.length) throw new Error(ctx.errors[0].message);
+      $("success-title").textContent = "Thank you, " + data.name.split(" ")[0] + "!";
+      if (ticket) {
+        $("success-text").textContent = "Your request is ticket #" + ticket.id + " in our help desk. We will reply to " + data.email + " within one working day. Keep that number: with your email it lets you follow progress.";
+        $("track-link").href = "track.html?ref=" + ticket.id;
+        $("track-link").hidden = false;
+      } else {
+        $("success-text").textContent = "We have your message and will reply to " + data.email + " within one working day.";
+        $("track-link").hidden = true;
+      }
+      form.hidden = true;
+      $("success").hidden = false;
+      $("success").focus();
+      reset();
+    }).catch(function () {
+      reset();
       showSummary([{ key: "message", msg: "We could not save your request because this browser blocks storage. Please email hello@northlight.example instead." }]);
-      return;
-    }
-    $("success-title").textContent = "Thank you, " + data.name.split(" ")[0] + "!";
-    $("success-text").textContent = "Your request is ticket #" + ticket.id + " in our help desk. We will reply to " + data.email + " within one working day. Keep that number: with your email it lets you follow progress.";
-    $("track-link").href = "track.html?ref=" + ticket.id;
-    form.hidden = true;
-    $("success").hidden = false;
-    $("success").focus();
-    btn.disabled = false;
-    btn.firstChild.textContent = "Send message ";
+    });
   });
 
   $("again").addEventListener("click", function () {
