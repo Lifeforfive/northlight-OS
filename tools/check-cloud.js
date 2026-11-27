@@ -19,7 +19,8 @@ const path = isNode ? require("path") : null;
 const REQUIRED_TAGS = ["owner", "env", "cost-center"];
 const ENVS = ["dev", "test", "prod"];
 const COST_CENTER = /^CC-\d{4}$/;
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// same strictness as the website's email check (security.js): no spaces or markup characters like < > " ( ) , ; :
+const EMAIL = /^[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+)*@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/;
 const PRODUCT = "northlight";
 
 // Naming rules per resource type (modelled on common cloud limits) plus our convention.

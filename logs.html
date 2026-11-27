@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; worker-src 'none'; manifest-src 'none'">
+  <meta name="referrer" content="same-origin">
+  <script src="guard.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Logs · Northlight Studio</title>
   <meta name="description" content="Sign up to read the flight recorder: every event that happened on the Northlight Studio website.">
@@ -163,16 +166,16 @@
 
       <form id="signup-form" novalidate>
         <div class="field"><label for="su-name">Choose a username</label><input id="su-name" autocomplete="username" maxlength="24" aria-describedby="su-name-err"><p class="error" id="su-name-err" hidden></p></div>
-        <div class="field"><label for="su-pass">Choose a password (8+ characters)</label><input id="su-pass" type="password" autocomplete="new-password" aria-describedby="su-pass-err"><p class="error" id="su-pass-err" hidden></p></div>
-        <div class="field"><label for="su-pass2">Type the password again</label><input id="su-pass2" type="password" autocomplete="new-password" aria-describedby="su-pass2-err"><p class="error" id="su-pass2-err" hidden></p></div>
+        <div class="field"><label for="su-pass">Choose a password (12+ characters)</label><input id="su-pass" type="password" maxlength="128" autocomplete="new-password" aria-describedby="su-pass-err"><p class="error" id="su-pass-err" hidden></p></div>
+        <div class="field"><label for="su-pass2">Type the password again</label><input id="su-pass2" type="password" maxlength="128" autocomplete="new-password" aria-describedby="su-pass2-err"><p class="error" id="su-pass2-err" hidden></p></div>
         <button class="btn primary" id="su-go" type="submit">Create account and open the logs</button>
-        <p class="meta" style="margin-top:.7rem">Use a made-up password. Your password is hashed in the browser (PBKDF2 with Web Crypto) and never stored as text.</p>
+        <p class="meta" style="margin-top:.7rem">Use a made-up passphrase of 12 or more characters, such as three random words. Wrong guesses are rate-limited in this browser. Your password is hashed in the browser (PBKDF2 with Web Crypto) and never stored as text.</p>
       </form>
 
       <form id="signin-form" novalidate hidden>
         <div class="general" id="si-general" role="alert" hidden></div>
         <div class="field"><label for="si-name">Username</label><input id="si-name" autocomplete="username" maxlength="24" aria-describedby="si-name-err"><p class="error" id="si-name-err" hidden></p></div>
-        <div class="field"><label for="si-pass">Password</label><input id="si-pass" type="password" autocomplete="current-password" aria-describedby="si-pass-err"><p class="error" id="si-pass-err" hidden></p></div>
+        <div class="field"><label for="si-pass">Password</label><input id="si-pass" type="password" maxlength="128" autocomplete="current-password" aria-describedby="si-pass-err"><p class="error" id="si-pass-err" hidden></p></div>
         <button class="btn primary" id="si-go" type="submit">Sign in</button>
       </form>
     </div>
@@ -214,6 +217,7 @@
   </main>
 
   <script src="config.js"></script>
+  <script src="security.js"></script>
   <script src="sitelog.js"></script>
   <script src="logs.js"></script>
   <script src="site.js"></script>

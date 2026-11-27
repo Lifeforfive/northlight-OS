@@ -46,14 +46,23 @@ node --test tools/
 
 Tests use fake command output and temporary files; nothing real is changed.
 
+## Security
+
+- Every page has a Content-Security-Policy (meta tag) and a referrer policy. There is no inline code; scripts are files. `guard.js` breaks the page out of foreign frames. The link check fails the build if a page breaks these rules.
+- Passwords are hashed with PBKDF2-SHA-256 (600,000 rounds); older hashes are upgraded at sign-in. Sign-in uses the same work for unknown users, so timing reveals nothing.
+- Sign-in, the one-time code and the Logs site use growing lock-outs. Passwords need 12+ characters and may not be common, sequential or contain the username (`security.js`).
+- Limits: this is a static site with fake data. Access control, lock-outs and stored data all live in the visitor's browser, so they stop mistakes and casual guessing, not a determined visitor. Demo passwords and TOTP secrets are public on purpose. Do not put real data here.
+
 ## Deployment
 
 Every push to `main` runs [.github/workflows/deploy.yml](.github/workflows/deploy.yml):
 
 1. check the cloud description (`tools/check-cloud.js`)
 2. check `health.json` and stamp the build date (`tools/stamp-health.js --stamp`)
-3. publish the repository to GitHub Pages
+3. assemble only the files the site needs into `_site` (`tools/build-site.js`; no tests, tooling or README)
+4. check links, run-time files and the security rules (`tools/check-links.js`)
+5. publish `_site` to GitHub Pages
 
-If a check fails, the job stops and nothing is published.
+If a check fails, the job stops and nothing is published. Actions are pinned to commit hashes and kept current by Dependabot.
 
 One-time setup: in the repository on GitHub, go to **Settings → Pages** and set **Source** to **GitHub Actions**.

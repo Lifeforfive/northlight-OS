@@ -152,9 +152,9 @@
       if (v.length < 2) return "Your name needs at least 2 characters.";
     }
     if (key === "email") {
-      v = v.trim();
-      if (!v) return "Please enter your email address.";
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return "That email address does not look right. Use the form name@company.com.";
+      // strict check from security.js: refuses < > " ( ) , ; : and spaces, so an address can never carry markup
+      var ep = window.NorthlightSecurity ? window.NorthlightSecurity.emailProblem(v) : "The security module did not load.";
+      if (ep) return ep;
     }
     if (key === "topic" && !v) return "Please choose a topic so we can send your message to the right person.";
     if (key === "message") {

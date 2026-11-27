@@ -6,7 +6,7 @@
  */
 (function (root) {
   var STORAGE_KEY = "northlight-staff-v1";
-  var ITERATIONS = 100000;      // PBKDF2 rounds
+  var ITERATIONS = 600000;      // PBKDF2 rounds (OWASP minimum for PBKDF2-HMAC-SHA-256). Older, weaker hashes are upgraded at the next sign-in.
   var TOTP_PERIOD = 30;         // seconds
   var B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   var GROUPS = ["Design", "Sales", "IT"];
@@ -139,13 +139,20 @@
   }
 
   async function seed() {
-    var users = [];
-    for (var i = 0; i < DEMO.length; i++) {
-      var d = DEMO[i];
-      users.push(await makeUser(d.username, d.name, d.group, d.role, d.password));
-    }
+    // hashed in parallel: 600,000 rounds per account would take a few seconds one after the other
+    var users = await Promise.all(DEMO.map(function (d) { return makeUser(d.username, d.name, d.group, d.role, d.password); }));
     return { users: users, log: [] };
   }
+
+  // ================= sign-in throttle (see security.js) =================
+
+  var SEC = window.NorthlightSecurity;
+  // Five wrong passwords per username, then 30 s, 60 s, 2 min ... up to 15 min. A second, wider limit stops guessing across many usernames.
+  var pwThrottle = SEC && SEC.createThrottle({ key: "northlight-throttle-pw-v1", freeAttempts: 5, baseMs: 30000 });
+  var pwGlobalThrottle = SEC && SEC.createThrottle({ key: "northlight-throttle-pw-all-v1", freeAttempts: 20, baseMs: 60000 });
+  // One-time codes: only 3 wrong tries per sign-in, then 60 s doubling up to 15 min.
+  var codeThrottle = SEC && SEC.createThrottle({ key: "northlight-throttle-code-v1", freeAttempts: 3, baseMs: 60000 });
+  var dummySalt = null;
 
   // ================= storage =================
 
@@ -225,16 +232,39 @@
 
   async function doSignIn(username, password) {
     state.error = ""; state.info = "";
-    var u = userByName(username);
-    var ok = false;
-    if (u) {
-      var h = await hashPassword(password, fromB64(u.salt), u.iterations);
-      ok = sameString(h, u.hash);
-    }
-    if (!ok) {
-      logEvent("Failed sign-in for \"" + username.trim() + "\" (wrong username or password)");
-      state.error = "Wrong username or password.";
+    if (!SEC) { state.error = "The security module (security.js) did not load, so sign-in is switched off."; return render(); }
+
+    // 1. Locked out? Unknown usernames are throttled exactly like real ones, so this reveals nothing.
+    var subject = "pw:" + username.trim().toLowerCase().slice(0, 60);
+    var gate = pwThrottle.check(subject), wide = pwGlobalThrottle.check("*");
+    if (!gate.allowed || !wide.allowed) {
+      var wait = Math.max(gate.waitMs, wide.waitMs);
+      logEvent("Blocked sign-in: too many failed attempts, locked for " + SEC.formatWait(wait));
+      state.error = "Too many failed attempts. Try again in " + SEC.formatWait(wait) + ".";
       return render();
+    }
+
+    // 2. Do the same hashing work whether or not the username exists, so response time reveals nothing.
+    var u = userByName(username);
+    if (!dummySalt) dummySalt = randomBytes(16);
+    var h = await hashPassword(password, u ? fromB64(u.salt) : dummySalt, u ? u.iterations : ITERATIONS);
+    var ok = !!u && sameString(h, u.hash);
+
+    if (!ok) {
+      var r = pwThrottle.fail(subject); pwGlobalThrottle.fail("*");
+      logEvent("Failed sign-in for \"" + username.trim() + "\" (wrong username or password)");
+      state.error = r.allowed ? "Wrong username or password." : "Too many failed attempts. Try again in " + SEC.formatWait(r.waitMs) + ".";
+      return render();
+    }
+    pwThrottle.success(subject);
+
+    // 3. A correct password on an older, weaker hash: store it again with today's number of rounds.
+    if (u.iterations < ITERATIONS) {
+      var newSalt = randomBytes(16);
+      u.salt = toB64(newSalt); u.iterations = ITERATIONS;
+      u.hash = await hashPassword(password, newSalt, ITERATIONS);
+      save();
+      logEvent(u.username + " password hash upgraded to " + ITERATIONS + " rounds");
     }
     if (u.status !== "active") {
       logEvent("Blocked sign-in: " + u.username + " is a leaver");
@@ -256,12 +286,21 @@
       state.error = "This account is disabled (leaver). Contact IT.";
       return render();
     }
-    var step = await verifyTotp(u.totpSecret, code.trim(), Date.now(), u.lastTotpStep);
-    if (step === null) {
-      logEvent(u.username + " failed step 2 (wrong, expired or reused code)");
-      state.error = "That code is wrong, expired or already used.";
+    var csub = "code:" + u.id;
+    var lock = codeThrottle.check(csub);
+    if (!lock.allowed) {
+      logEvent("Blocked step 2 for " + u.username + ": too many wrong codes, locked for " + SEC.formatWait(lock.waitMs));
+      state.error = "Too many wrong codes. Try again in " + SEC.formatWait(lock.waitMs) + ".";
       return render();
     }
+    var step = await verifyTotp(u.totpSecret, code.trim(), Date.now(), u.lastTotpStep);
+    if (step === null) {
+      var cr = codeThrottle.fail(csub);
+      logEvent(u.username + " failed step 2 (wrong, expired or reused code)");
+      state.error = cr.allowed ? "That code is wrong, expired or already used." : "Too many wrong codes. Try again in " + SEC.formatWait(cr.waitMs) + ".";
+      return render();
+    }
+    codeThrottle.success(csub);
     u.lastTotpStep = step;
     save();
     state.sessionId = u.id; state.pendingId = null; state.view = "app"; state.tab = "directory";
@@ -308,6 +347,8 @@
     stopTimer();
     db = await seed();
     save();
+    // a demo convenience: resetting also clears the sign-in lockouts (anyone with browser access can do this anyway)
+    ["northlight-throttle-pw-v1", "northlight-throttle-pw-all-v1", "northlight-throttle-code-v1"].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } });
     state = { view: "signin", pendingId: null, sessionId: null, tab: "directory", error: "", info: "Demo data reset.", welcome: null, showJoiner: false };
     if (window.NorthlightLog) window.NorthlightLog.add("staff", "reset", "Staff demo data reset (all users restored)", { level: "warn" });
     render();
@@ -320,7 +361,7 @@
     box.appendChild(el("p", "step", "Step 1 of 2: username and password"));
     var form = el("form");
     var u = input("su", "text", { autocomplete: "username", placeholder: "e.g. ada" });
-    var p = input("sp", "password", { autocomplete: "current-password" });
+    var p = input("sp", "password", { autocomplete: "current-password", maxLength: 128 });
     form.appendChild(field("Username", u));
     form.appendChild(field("Password", p));
     var go = el("button", "btn primary", "Continue");

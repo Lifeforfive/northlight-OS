@@ -210,8 +210,8 @@
   function checkEmail() {
     var v = emailEl.value.trim();
     if (!v) return "Please enter the email address you used for your request.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return "That email address does not look right. Use the form name@company.com.";
-    return "";
+    var ep = window.NorthlightSecurity ? window.NorthlightSecurity.emailProblem(v) : "The security module did not load.";
+    return ep;
   }
   refEl.addEventListener("input", function () { if (refEl.getAttribute("aria-invalid") && !checkRef()) setErr(refEl, refErr, ""); });
   emailEl.addEventListener("input", function () { if (emailEl.getAttribute("aria-invalid") && !checkEmail()) setErr(emailEl, emailErr, ""); });

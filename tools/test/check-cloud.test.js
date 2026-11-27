@@ -54,6 +54,13 @@ test("no tags object at all fails", () => {
   expectFail(d, "app-northlight-prod", "tags", /no "tags" object/);
 });
 
+test("an owner address that carries markup or spaces is refused", () => {
+  for (const owner of ["a<img/src=x/onerror=1>@b.co", "design ops@northlight.example", "x@y", "a..b@c.co"]) {
+    const d = good(); d.resources[RG].tags.owner = owner;
+    expectFail(d, "rg-northlight-prod", "tags", /email address/);
+  }
+});
+
 test("bad env, cost-center and owner values fail", () => {
   let d = good(); d.resources[APP].tags.env = "staging";
   expectFail(d, "app-northlight-prod", "tags", /allowed: dev, test, prod/);

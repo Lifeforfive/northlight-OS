@@ -1,0 +1,4 @@
+# build output and local tooling, never committed
+_site/
+.playwright-mcp/
+node_modules/

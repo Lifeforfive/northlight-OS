@@ -7,7 +7,11 @@
    */
   var USERS_KEY = "northlight-logs-users-v1";
   var SESSION_KEY = "northlight-logs-session";
-  var ITERATIONS = 100000;
+  var ITERATIONS = 600000;     // OWASP minimum for PBKDF2-HMAC-SHA-256; older, weaker hashes are upgraded at the next sign-in
+  var SEC = window.NorthlightSecurity;
+  var signinThrottle = SEC && SEC.createThrottle({ key: "northlight-throttle-logs-v1", freeAttempts: 5, baseMs: 30000 });
+  var signinWideThrottle = SEC && SEC.createThrottle({ key: "northlight-throttle-logs-all-v1", freeAttempts: 20, baseMs: 60000 });
+  var dummySalt = null;
   var NS = "http://www.w3.org/2000/svg";
   var PAGE_SIZE = 150;
 
@@ -99,8 +103,9 @@
     else if (!/^[a-z0-9._-]{3,24}$/.test(name)) bad = fieldErr("su-name", "Use 3 to 24 letters, numbers, dots, dashes or underscores.") || bad;
     else if (findUser(name)) bad = fieldErr("su-name", "That username is taken. Please pick another.") || bad;
     else fieldErr("su-name", "");
+    var problems = SEC ? SEC.passwordProblems(pw, name) : ["The security module did not load."];
     if (!pw) bad = fieldErr("su-pass", "Please choose a password.") || bad;
-    else if (pw.length < 8) bad = fieldErr("su-pass", "Your password needs at least 8 characters. It has " + pw.length + ".") || bad;
+    else if (problems.length) bad = fieldErr("su-pass", problems.slice(0, 2).join(" ")) || bad;
     else fieldErr("su-pass", "");
     if (!pw2) bad = fieldErr("su-pass2", "Please type the password again.") || bad;
     else if (pw2 !== pw) bad = fieldErr("su-pass2", "The two passwords are not the same.") || bad;
@@ -130,19 +135,48 @@
     bad = fieldErr("si-name", name ? "" : "Please enter your username.") || bad;
     bad = fieldErr("si-pass", pw ? "" : "Please enter your password.") || bad;
     if (bad) { $(name ? "si-pass" : "si-name").focus(); return; }
-    var btn = $("si-go"); btn.disabled = true;
-    var u = findUser(name), ok = false;
-    if (u) ok = sameString(await hashPassword(pw, u.salt, u.iterations), u.hash);
-    btn.disabled = false;
-    if (!ok) {
-      slog("signin.failed", "Failed sign-in on the Logs site for " + name, "warn");
-      $("si-general").textContent = "Wrong username or password.";
+    if (!SEC) { $("si-general").textContent = "The security module (security.js) did not load, so sign-in is switched off."; $("si-general").hidden = false; return; }
+
+    // Locked out? Unknown usernames are throttled exactly like real ones, so this reveals nothing.
+    var subject = "logs:" + name.slice(0, 60);
+    var gate = signinThrottle.check(subject), wide = signinWideThrottle.check("*");
+    if (!gate.allowed || !wide.allowed) {
+      var wait = Math.max(gate.waitMs, wide.waitMs);
+      slog("signin.blocked", "Sign-in on the Logs site blocked: too many failed attempts, locked for " + SEC.formatWait(wait), "warn");
+      $("si-general").textContent = "Too many failed attempts. Try again in " + SEC.formatWait(wait) + ".";
       $("si-general").hidden = false;
       return;
     }
-    setSession(u.username);
-    slog("signin", u.username + " signed in to the Logs site", "ok");
-    showApp();
+
+    var btn = $("si-go"); btn.disabled = true;      // stays disabled for the whole sign-in, so it cannot be submitted twice
+    try {
+      // The same hashing work whether or not the username exists, so response time reveals nothing.
+      var u = findUser(name);
+      if (!dummySalt) dummySalt = toB64(crypto.getRandomValues(new Uint8Array(16)));
+      var ok = sameString(await hashPassword(pw, u ? u.salt : dummySalt, u ? u.iterations : ITERATIONS), u ? u.hash : "");
+      if (!ok || !u) {
+        var r = signinThrottle.fail(subject); signinWideThrottle.fail("*");
+        slog("signin.failed", "Failed sign-in on the Logs site for " + name, "warn");
+        $("si-general").textContent = r.allowed ? "Wrong username or password." : "Too many failed attempts. Try again in " + SEC.formatWait(r.waitMs) + ".";
+        $("si-general").hidden = false;
+        return;
+      }
+      signinThrottle.success(subject);
+      if (u.iterations < ITERATIONS) {                                  // an older, weaker hash: store it again with today's number of rounds
+        var all = readUsers(), rec = all.filter(function (x) { return x.username === u.username; })[0];
+        if (rec) {
+          rec.salt = toB64(crypto.getRandomValues(new Uint8Array(16))); rec.iterations = ITERATIONS;
+          rec.hash = await hashPassword(pw, rec.salt, ITERATIONS);
+          saveUsers(all);
+          slog("hash.upgraded", u.username + "'s password hash was upgraded to " + ITERATIONS + " rounds", "info");
+        }
+      }
+      setSession(u.username);
+      slog("signin", u.username + " signed in to the Logs site", "ok");
+      showApp();
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   $("signout").onclick = function () {
