@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Staff Access · Northlight Studio</title>
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
   <meta name="description" content="Learning model of staff sign-in with a password, a one-time code and joiner/leaver handling.">
   <style>
     :root {
@@ -83,26 +84,53 @@
     .demo summary { font-weight: 600; color: var(--text); }
     footer { color: var(--muted); font-size: .85rem; padding: 1rem 0 2rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
   </style>
+  <link rel="stylesheet" href="site.css">
 </head>
-<body>
-  <div class="wrap">
-    <div class="bar">
-      <a class="brand" href="index.html">Northlight <span>Studio</span></a>
-      <a href="helpdesk.html">Help desk</a>
+<body class="sx" data-page="staff" style="--sx-max:52rem">
+  <a class="sx-skip" href="#sx-main">Skip to content</a>
+  <header class="sx-header">
+    <div class="sx-wrap">
+      <a class="sx-brand" href="index.html"><img src="logo.svg" width="34" height="34" alt="Northlight Studio logo"><span>Northlight <b>Studio</b></span></a>
+      <button class="sx-toggle" id="sx-toggle" type="button" aria-expanded="false" aria-controls="sx-nav" aria-label="Menu"><span></span></button>
+      <nav class="sx-nav" id="sx-nav" aria-label="Main">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="helpdesk.html">Help desk</a></li>
+          <li><a href="crm.html">CRM</a></li>
+          <li><a href="troubleshoot.html">PC &amp; network tools</a></li>
+          <li><a href="staff.html" aria-current="page">Staff access</a></li>
+        </ul>
+      </nav>
     </div>
+  </header>
 
-    <h1>Staff access</h1>
+  <section class="sx-banner" aria-labelledby="sx-h1">
+    <div class="sx-stars" aria-hidden="true"></div>
+    <canvas class="sx-aurora" data-palette="staff" aria-hidden="true"></canvas>
+    <svg class="sx-art" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+      <circle cx="100" cy="100" r="70" fill="none" stroke="#2a4060" stroke-width="6"/>
+      <circle class="sx-ring" cx="100" cy="100" r="70" fill="none" stroke="#a78bfa" stroke-width="6" stroke-linecap="round" stroke-dasharray="440" transform="rotate(-90 100 100)"/>
+      <circle cx="100" cy="90" r="15" fill="#d9b24c"/>
+      <path d="M91 99 h18 l7 38 h-32 z" fill="#d9b24c"/>
+    </svg>
+    <div class="sx-wrap sx-banner-inner">
+      <p class="sx-eyebrow">Learning model</p>
+      <h1 id="sx-h1">Staff access</h1>
+      <p class="sx-lead">Sign in with a password and a one-time code. IT can add joiners and mark leavers.</p>
+    </div>
+  </section>
 
-    <div class="learning" role="note">
+  <div class="wrap" id="sx-main">
+    <div class="learning sx-rise" role="note" style="margin-top:1.5rem">
       <strong>This is a learning model, not a real security system.</strong>
       Everything runs in your browser and is saved in localStorage, so anyone using this browser can read or change it.
       Real systems check passwords, one-time codes and permissions on a server. All names and passwords here are fake.
       Never type a real password.
     </div>
 
-    <div id="app" class="card" aria-live="polite">Loading…</div>
+    <div id="app" class="card sx-rise" style="--d:.08s" aria-live="polite" data-win="secure-login · learning model" data-tone="violet" data-skin="glass">Loading…</div>
 
-    <details class="card demo">
+    <details class="card demo sx-rise" style="--d:.16s" data-win="demo-accounts.txt" data-tone="teal" data-skin="terminal">
       <summary>Demo accounts (fake): usernames and passwords to try</summary>
       <div class="tablewrap">
         <table>
@@ -119,5 +147,6 @@
     </footer>
   </div>
   <script src="staff.js"></script>
+  <script src="site.js"></script>
 </body>
 </html>

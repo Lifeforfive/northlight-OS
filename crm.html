@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CRM · Northlight Studio</title>
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
   <meta name="description" content="Small CRM for Northlight Studio: leads, accounts, contacts, opportunities and support cases.">
   <style>
     :root {
@@ -88,20 +89,48 @@
     #toast.show { opacity: 1; }
     footer { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; color: var(--muted); font-size: .85rem; padding: .5rem 0 2rem; }
   </style>
+  <link rel="stylesheet" href="site.css">
 </head>
-<body>
-  <div class="wrap">
-    <div class="bar">
-      <a class="brand" href="index.html">Northlight <span>Studio</span></a>
-      <nav><a href="index.html">Home</a><a href="helpdesk.html">Help desk</a></nav>
+<body class="sx" data-page="crm" style="--sx-max:64rem">
+  <a class="sx-skip" href="#sx-main">Skip to content</a>
+  <header class="sx-header">
+    <div class="sx-wrap">
+      <a class="sx-brand" href="index.html"><img src="logo.svg" width="34" height="34" alt="Northlight Studio logo"><span>Northlight <b>Studio</b></span></a>
+      <button class="sx-toggle" id="sx-toggle" type="button" aria-expanded="false" aria-controls="sx-nav" aria-label="Menu"><span></span></button>
+      <nav class="sx-nav" id="sx-nav" aria-label="Main">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="helpdesk.html">Help desk</a></li>
+          <li><a href="crm.html" aria-current="page">CRM</a></li>
+          <li><a href="troubleshoot.html">PC &amp; network tools</a></li>
+          <li><a href="staff.html">Staff access</a></li>
+        </ul>
+      </nav>
     </div>
+  </header>
 
-    <h1>CRM</h1>
-    <p class="lead">Leads, accounts, contacts, opportunities and support cases in one place.</p>
+  <section class="sx-banner" aria-labelledby="sx-h1">
+    <div class="sx-stars" aria-hidden="true"></div>
+    <canvas class="sx-aurora" data-palette="crm" aria-hidden="true"></canvas>
+    <svg class="sx-art" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+      <line x1="14" y1="172" x2="186" y2="172" stroke="#d9b24c" stroke-width="2" stroke-linecap="round"/>
+      <rect class="sx-funnel" style="animation-delay:0s" x="22" y="62" width="26" height="110" rx="4" fill="#8fa8c8"/>
+      <rect class="sx-funnel" style="animation-delay:-.7s" x="54" y="87" width="26" height="85" rx="4" fill="#6fb7ff"/>
+      <rect class="sx-funnel" style="animation-delay:-1.4s" x="86" y="110" width="26" height="62" rx="4" fill="#4ec9a0"/>
+      <rect class="sx-funnel" style="animation-delay:-2.1s" x="118" y="132" width="26" height="40" rx="4" fill="#d9b24c"/>
+      <rect class="sx-funnel" style="animation-delay:-2.8s" x="150" y="148" width="26" height="24" rx="4" fill="#ff7a6b"/>
+    </svg>
+    <div class="sx-wrap sx-banner-inner">
+      <p class="sx-eyebrow">Sales &amp; service</p>
+      <h1 id="sx-h1">CRM</h1>
+      <p class="sx-lead">Leads, accounts, contacts, opportunities and support cases in one place.</p>
+    </div>
+  </section>
 
-    <div id="tiles" class="tiles"></div>
+  <div class="wrap" id="sx-main" style="padding-top:1.5rem">
+    <div id="tiles" class="tiles sx-rise"></div>
 
-    <section class="card" aria-labelledby="chart-h">
+    <section class="card sx-rise" style="--d:.08s" aria-labelledby="chart-h" data-win="pipeline.chart" data-tone="gold" data-skin="neon">
       <div class="card-head">
         <h2 id="chart-h">Opportunities by stage</h2>
         <div class="seg" role="group" aria-label="Chart measure">
@@ -112,7 +141,7 @@
       <div id="chart"></div>
     </section>
 
-    <section class="card">
+    <section class="card sx-rise" style="--d:.16s" data-win="records" data-tone="blue" data-skin="notch">
       <div id="tabs" class="tabs"></div>
       <div id="panel"></div>
     </section>
@@ -124,5 +153,6 @@
   </div>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="crm.js"></script>
+  <script src="site.js"></script>
 </body>
 </html>

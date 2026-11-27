@@ -71,37 +71,73 @@
     .cmd code { padding: .4rem .7rem; font-size: .95rem; }
     .btn.copy { padding: .3rem .8rem; font-size: .85rem; }
   </style>
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="site.css">
 </head>
-<body>
-  <div class="wrap">
-    <div class="bar">
-      <a class="brand" href="index.html">Northlight <span>Studio</span></a>
-      <a href="helpdesk.html">Help desk</a>
+<body class="sx" data-page="tools" style="--sx-max:44rem">
+  <a class="sx-skip" href="#sx-main">Skip to content</a>
+  <header class="sx-header">
+    <div class="sx-wrap">
+      <a class="sx-brand" href="index.html"><img src="logo.svg" width="34" height="34" alt="Northlight Studio logo"><span>Northlight <b>Studio</b></span></a>
+      <button class="sx-toggle" id="sx-toggle" type="button" aria-expanded="false" aria-controls="sx-nav" aria-label="Menu"><span></span></button>
+      <nav class="sx-nav" id="sx-nav" aria-label="Main">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="helpdesk.html">Help desk</a></li>
+          <li><a href="crm.html">CRM</a></li>
+          <li><a href="troubleshoot.html" aria-current="page">PC &amp; network tools</a></li>
+          <li><a href="staff.html">Staff access</a></li>
+        </ul>
+      </nav>
     </div>
+  </header>
 
-    <h1>No internet?</h1>
-    <p class="lead">Answer a few questions and we will find the likely cause.</p>
+  <section class="sx-banner" aria-labelledby="sx-h1">
+    <div class="sx-stars" aria-hidden="true"></div>
+    <canvas class="sx-aurora" data-palette="tools" aria-hidden="true"></canvas>
+    <svg class="sx-art" viewBox="0 0 220 140" aria-hidden="true" focusable="false">
+      <path d="M30 70 H190" stroke="#2a4060" stroke-width="2" fill="none"/>
+      <path class="sx-flow" d="M30 70 H190" stroke="#6fb7ff" stroke-width="2" stroke-dasharray="6 8" fill="none"/>
+      <circle class="sx-packet" cx="30" cy="70" r="4.5" fill="#4ec9a0"/>
+      <rect x="10" y="52" width="40" height="30" rx="6" fill="#16253b" stroke="#6fb7ff" stroke-width="2"/>
+      <path d="M20 90 h20" stroke="#6fb7ff" stroke-width="2" stroke-linecap="round"/>
+      <rect x="92" y="54" width="36" height="32" rx="8" fill="#16253b" stroke="#d9b24c" stroke-width="2"/>
+      <circle cx="102" cy="70" r="2.2" fill="#4ec9a0"/><circle cx="110" cy="70" r="2.2" fill="#4ec9a0"/><circle cx="118" cy="70" r="2.2" fill="#d9b24c"/>
+      <circle cx="190" cy="70" r="19" fill="#16253b" stroke="#4ec9a0" stroke-width="2"/>
+      <ellipse cx="190" cy="70" rx="8" ry="19" fill="none" stroke="#4ec9a0" stroke-width="1.4" opacity=".7"/>
+      <path d="M171 70 h38" stroke="#4ec9a0" stroke-width="1.4" opacity=".7"/>
+      <g class="sx-blip" fill="none" stroke="#4ec9a0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 36 l5 5 l9 -10"/><path d="M104 28 l5 5 l9 -10" style="opacity:.9"/><path d="M183 26 l5 5 l9 -10"/>
+      </g>
+    </svg>
+    <div class="sx-wrap sx-banner-inner">
+      <p class="sx-eyebrow">PC &amp; network tools</p>
+      <h1 id="sx-h1">No internet?</h1>
+      <p class="sx-lead">Answer a few questions and we will find the likely cause.</p>
+    </div>
+  </section>
 
+  <div class="wrap" id="sx-main" style="padding-top:1.5rem">
     <div id="trail" class="trail" aria-live="polite"></div>
-    <div id="card" class="card" aria-live="polite"></div>
+    <div id="card" class="card" aria-live="polite" data-win="diagnose" data-tone="blue" data-skin="neon"></div>
 
     <div class="nav">
       <button id="back" class="btn" type="button">← Back</button>
       <button id="restart" class="btn" type="button">Start over</button>
     </div>
 
-    <section class="tools" aria-labelledby="tools-h">
+    <section class="tools sx-rise" style="--d:.15s" aria-labelledby="tools-h">
       <h2 id="tools-h">PC &amp; network tools</h2>
       <p class="lead">Two small read-only scripts for the affected PC. A web page cannot run them, so run them in a terminal with <a href="https://nodejs.org" rel="noopener">Node.js</a> installed, from the folder that contains <code>tools</code>. They only read information and never change a setting.</p>
 
-      <div class="tool">
+      <div class="tool" data-win="network-doctor" data-tone="teal" data-skin="terminal">
         <h3>Network doctor</h3>
         <p class="meta">Checks the router, then 1.1.1.1, then a website name. Prints PASS or FAIL for each and names the first failing step.</p>
         <div class="cmd"><code>node tools/network-doctor.js</code><button class="btn copy" type="button" data-cmd="node tools/network-doctor.js">Copy</button></div>
         <p class="meta">Optional: add a website name, for example <code>node tools/network-doctor.js northlight.example</code>. <a href="tools/network-doctor.js">View source</a></p>
       </div>
 
-      <div class="tool">
+      <div class="tool" data-win="health-report" data-tone="gold" data-skin="terminal">
         <h3>PC health report</h3>
         <p class="meta">Shows the operating system, free disk space, firewall status and whether updates are current, as PASS or FAIL.</p>
         <div class="cmd"><code>node tools/health-report.js</code><button class="btn copy" type="button" data-cmd="node tools/health-report.js">Copy</button></div>
@@ -381,7 +417,7 @@
     path = ["start"];
     render();
 
-    // Copy buttons for the tool commands.
+    // Copy buttons for the tool commands. (Header, aurora and transitions come from site.js.)
     Array.prototype.forEach.call(document.querySelectorAll(".copy"), function (b) {
       b.onclick = function () {
         var done = function (ok) {
@@ -394,5 +430,6 @@
       };
     });
   </script>
+  <script src="site.js"></script>
 </body>
 </html>

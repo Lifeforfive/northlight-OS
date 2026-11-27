@@ -5,23 +5,57 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Help Desk · Northlight Studio</title>
   <meta name="description" content="Northlight Studio help desk: raise and track support tickets.">
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="helpdesk.css">
+  <link rel="stylesheet" href="site.css">
 </head>
-<body>
-  <header class="site-header">
-    <div class="wrap bar">
-      <a class="brand" href="index.html">Northlight <span>Studio</span></a>
-      <a href="index.html">Home</a>
+<body class="sx" data-page="helpdesk" style="--sx-max:56rem">
+  <a class="sx-skip" href="#sx-main">Skip to content</a>
+  <header class="sx-header">
+    <div class="sx-wrap">
+      <a class="sx-brand" href="index.html"><img src="logo.svg" width="34" height="34" alt="Northlight Studio logo"><span>Northlight <b>Studio</b></span></a>
+      <button class="sx-toggle" id="sx-toggle" type="button" aria-expanded="false" aria-controls="sx-nav" aria-label="Menu"><span></span></button>
+      <nav class="sx-nav" id="sx-nav" aria-label="Main">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="helpdesk.html" aria-current="page">Help desk</a></li>
+          <li><a href="crm.html">CRM</a></li>
+          <li><a href="troubleshoot.html">PC &amp; network tools</a></li>
+          <li><a href="staff.html">Staff access</a></li>
+        </ul>
+      </nav>
     </div>
   </header>
 
-  <main class="wrap">
-    <h1>Help Desk</h1>
-    <p class="lead">Raise a ticket. Priority is worked out from impact and urgency, and every priority has a response target.</p>
+  <section class="sx-banner" aria-labelledby="sx-h1">
+    <div class="sx-stars" aria-hidden="true"></div>
+    <canvas class="sx-aurora" data-palette="helpdesk" aria-hidden="true"></canvas>
+    <svg class="sx-art" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+      <g fill="none" stroke="#4ec9a0" stroke-width="1.2">
+        <circle cx="100" cy="100" r="46" opacity=".25"/>
+        <circle cx="100" cy="100" r="80" opacity=".18"/>
+        <circle class="sx-ping" cx="100" cy="100" r="20"/>
+        <circle class="sx-ping" style="animation-delay:-1.3s" cx="100" cy="100" r="20"/>
+        <circle class="sx-ping" style="animation-delay:-2.6s" cx="100" cy="100" r="20"/>
+      </g>
+      <line class="sx-sweep" x1="100" y1="100" x2="100" y2="22" stroke="#6fb7ff" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+      <circle cx="100" cy="100" r="4.5" fill="#4ec9a0"/>
+      <circle class="sx-blip" cx="146" cy="64" r="5.5" fill="#ff7a6b"/>
+      <circle class="sx-blip" style="animation-delay:-.9s" cx="56" cy="120" r="4.5" fill="#f5b942"/>
+      <circle class="sx-blip" style="animation-delay:-1.7s" cx="124" cy="160" r="3.8" fill="#6fb7ff"/>
+    </svg>
+    <div class="sx-wrap sx-banner-inner">
+      <p class="sx-eyebrow">Support</p>
+      <h1 id="sx-h1">Help Desk</h1>
+      <p class="sx-lead">Raise a ticket. Priority is worked out from impact and urgency, and every priority has a response target.</p>
+    </div>
+  </section>
 
-    <section aria-labelledby="new-h">
+  <main class="wrap" id="sx-main">
+
+    <section class="sx-rise" aria-labelledby="new-h">
       <h2 id="new-h">New ticket</h2>
-      <form id="ticket-form">
+      <form id="ticket-form" data-win="new-ticket" data-tone="teal" data-skin="glass">
         <div class="field">
           <label for="requester">Requester</label>
           <input id="requester" required maxlength="80" placeholder="e.g. Jana Novak">
@@ -54,7 +88,7 @@
       </form>
     </section>
 
-    <section aria-labelledby="list-h">
+    <section class="sx-rise" style="--d:.1s" aria-labelledby="list-h">
       <div class="list-head">
         <h2 id="list-h">Tickets</h2>
         <button id="reset" class="btn ghost" type="button">Reset demo data</button>
@@ -71,5 +105,6 @@
 
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="helpdesk.js"></script>
+  <script src="site.js"></script>
 </body>
 </html>
