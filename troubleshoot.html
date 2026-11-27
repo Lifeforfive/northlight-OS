@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>No Internet · Troubleshooter</title>
+  <meta name="description" content="Step-by-step troubleshooter for 'no internet'.">
+  <style>
+    :root {
+      --bg: #0f1b2d; --panel: #16253b; --line: #2a4060;
+      --text: #f4f1ea; --muted: #a9b6c7;
+      --accent: #f5b942; --accent-ink: #1b1403;
+      --ok: #4ec9a0; --bad: #ff7a6b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.55;
+    }
+    a { color: var(--accent); }
+    .wrap { max-width: 44rem; margin: 0 auto; padding: 0 1rem; }
+    .bar { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--line); }
+    .brand { font-weight: 700; color: var(--text); text-decoration: none; }
+    .brand span { color: var(--accent); }
+    h1 { font-size: 2rem; margin: 2rem 0 .25rem; }
+    .lead { color: var(--muted); margin: 0 0 1.5rem; }
+
+    .trail { color: var(--muted); font-size: .85rem; margin-bottom: 1rem; min-height: 1.3rem; }
+    .trail b { color: var(--text); font-weight: 600; }
+
+    .card {
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 14px; padding: 1.5rem;
+    }
+    .card.result { border-left: 5px solid var(--accent); }
+    .card.fixed { border-left-color: var(--ok); }
+    .card.escalate { border-left-color: var(--bad); }
+    .kicker { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 .5rem; }
+    h2 { font-size: 1.35rem; margin: 0 0 .75rem; }
+    .card p { margin: 0 0 .75rem; }
+    .card ol { padding-left: 1.25rem; margin: 0 0 1rem; }
+    .card li { margin-bottom: .35rem; }
+    code { background: #0b1422; border: 1px solid var(--line); border-radius: 4px; padding: .05rem .35rem; font-size: .9em; }
+
+    .choices { display: grid; gap: .6rem; margin-top: 1rem; }
+    button { font: inherit; cursor: pointer; }
+    .choice {
+      text-align: left; color: var(--text); background: var(--bg);
+      border: 1px solid var(--line); border-radius: 10px; padding: .9rem 1rem;
+    }
+    .choice:hover { border-color: var(--accent); }
+    .choice small { display: block; color: var(--muted); }
+    h2:focus { outline: none; }
+    button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .nav { display: flex; gap: .6rem; margin-top: 1.25rem; flex-wrap: wrap; }
+    .btn {
+      background: transparent; color: var(--text); border: 1px solid var(--line);
+      border-radius: 8px; padding: .5rem 1rem;
+    }
+    .btn:hover:not(:disabled) { border-color: var(--accent); }
+    .btn:disabled { opacity: .4; cursor: default; }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+    .linkrow { margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+    footer { color: var(--muted); font-size: .85rem; padding: 2rem 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="bar">
+      <a class="brand" href="index.html">Northlight <span>Studio</span></a>
+      <a href="helpdesk.html">Help desk</a>
+    </div>
+
+    <h1>No internet?</h1>
+    <p class="lead">Answer a few questions and we will find the likely cause.</p>
+
+    <div id="trail" class="trail" aria-live="polite"></div>
+    <div id="card" class="card" aria-live="polite"></div>
+
+    <div class="nav">
+      <button id="back" class="btn" type="button">← Back</button>
+      <button id="restart" class="btn" type="button">Start over</button>
+    </div>
+
+    <footer>Tip: on the affected PC you can also run <code>node tools/network-doctor.js</code>. It checks the router, then 1.1.1.1, then a website name, and names the first failing step. It only reads information and changes nothing.</footer>
+  </div>
+
+  <script>
+    // The decision tree. A node is a question (with options) or a result (type "result").
+    var TREE = {
+      start: {
+        q: "Do other devices on the same network (a phone, another PC) have internet?",
+        short: "Other devices",
+        options: [
+          { label: "Yes, only this PC has no internet", to: "connected" },
+          { label: "No, nothing is online", to: "lights" },
+          { label: "I don't know", hint: "Try a phone on the same Wi-Fi. Switch its mobile data off first.", to: "start" }
+        ]
+      },
+
+      // ----- Only this PC -----
+      connected: {
+        q: "Does this PC show that it is connected to Wi-Fi or a cable?",
+        short: "PC connected",
+        options: [
+          { label: "No, it shows disconnected or airplane mode", to: "reconnect" },
+          { label: "Yes, it shows connected but pages will not load", to: "byip" }
+        ]
+      },
+      reconnect: {
+        type: "result", kind: "fixed", short: "Reconnect",
+        title: "Get this PC back on the network",
+        steps: [
+          "Turn off airplane mode and make sure the Wi-Fi switch is on.",
+          "Click the Wi-Fi icon, choose your network and connect. Re-enter the password if asked.",
+          "On a cable: unplug it, plug it back in, and try another port or cable.",
+          "Restart the PC if it still shows disconnected."
+        ],
+        next: "check"
+      },
+      byip: {
+        q: "Open http://1.1.1.1 in your browser. Does a page load?",
+        short: "Open 1.1.1.1",
+        options: [
+          { label: "Yes, that page loads but other sites do not", to: "dns" },
+          { label: "No, nothing loads", to: "pcfix" }
+        ]
+      },
+      dns: {
+        type: "result", kind: "result", short: "DNS problem",
+        title: "Probably a DNS problem",
+        text: "The connection works, but website names are not being translated into addresses.",
+        steps: [
+          "Close and reopen the browser, then try again.",
+          "Restart the PC.",
+          "Switch off any VPN and try again.",
+          "If it still fails, raise a ticket. IT may need to check the DNS settings."
+        ],
+        next: "check"
+      },
+      pcfix: {
+        q: "Do you use a VPN or proxy on this PC?",
+        short: "VPN / proxy",
+        options: [
+          { label: "Yes", to: "vpn" },
+          { label: "No", to: "forget" }
+        ]
+      },
+      vpn: {
+        type: "result", kind: "result", short: "VPN",
+        title: "Disconnect the VPN and try again",
+        steps: [
+          "Disconnect the VPN and turn off any proxy.",
+          "Try to open a website again.",
+          "If it works now, the VPN is the cause. Reconnect it, or ask IT to check it."
+        ],
+        next: "check"
+      },
+      forget: {
+        type: "result", kind: "result", short: "Rejoin network",
+        title: "Rejoin the network and restart",
+        steps: [
+          "Wi-Fi: choose your network, select Forget, then connect again with the password.",
+          "Restart the PC.",
+          "Try another network, for example a phone hotspot. If that works, the problem is with the office network and not this PC."
+        ],
+        next: "check"
+      },
+
+      // ----- Nothing is online -----
+      lights: {
+        q: "Look at the router. Is it powered on, with its internet or WAN light on (usually green or white)?",
+        short: "Router lights",
+        options: [
+          { label: "Router is off or has no lights", to: "power" },
+          { label: "Internet or WAN light is off or red", to: "isp" },
+          { label: "Lights look normal", to: "restart" }
+        ]
+      },
+      power: {
+        type: "result", kind: "result", short: "Router power",
+        title: "Restore power to the router",
+        steps: [
+          "Check the power plug at the router and at the wall. Try another socket.",
+          "Check that the power strip or switch is on.",
+          "Wait 2 to 3 minutes after the lights come on, then test again."
+        ],
+        next: "check"
+      },
+      isp: {
+        q: "Is the cable from the router to the wall socket or modem firmly connected at both ends?",
+        short: "WAN cable",
+        options: [
+          { label: "I will check", hint: "Unplug it and push it back in until it clicks.", to: "isp2" },
+          { label: "Yes, it is connected", to: "outage" }
+        ]
+      },
+      isp2: {
+        type: "result", kind: "result", short: "Reseat cable",
+        title: "Reseat the cable and wait",
+        steps: [
+          "Unplug the cable between the router and the modem or wall socket. Plug it back in firmly.",
+          "Wait 2 to 3 minutes for the internet light to turn on.",
+          "If the internet light stays off or red, go to the next question."
+        ],
+        next: "check",
+        failTo: "outage"
+      },
+      restart: {
+        type: "result", kind: "result", short: "Restart router",
+        title: "Restart the router",
+        steps: [
+          "Unplug the router's power cable. Wait 30 seconds.",
+          "Plug it back in and wait 2 to 3 minutes for the lights to settle.",
+          "Test again on a phone or PC."
+        ],
+        next: "check",
+        failTo: "outage"
+      },
+      outage: {
+        type: "result", kind: "escalate", short: "Contact provider",
+        title: "Probably a problem at the provider",
+        text: "The router and cables look fine, so the fault is likely outside the building.",
+        steps: [
+          "Check the provider's status page or app for an outage, using mobile data.",
+          "Call the provider and give them the router's model and the lights you see.",
+          "Raise a ticket so the team knows. Mention the time it started."
+        ],
+        ticket: true
+      },
+
+      // ----- Did it work? -----
+      check: {
+        q: "Is the internet working now?",
+        short: "Working now?",
+        options: [
+          { label: "Yes, it works", to: "solved" },
+          { label: "No, still no internet", to: "stillbad" }
+        ]
+      },
+      solved: {
+        type: "result", kind: "fixed", short: "Fixed",
+        title: "Great, you are back online",
+        text: "If it happens again, run through this page again or raise a ticket so we can look for a pattern."
+      },
+      stillbad: {
+        type: "result", kind: "escalate", short: "Raise a ticket",
+        title: "Time to raise a ticket",
+        text: "Nothing on this page fixed it. Write down what you tried so IT can continue from there.",
+        steps: [
+          "Note which questions you answered and what you tried.",
+          "On this PC, run node tools/network-doctor.js and copy the result.",
+          "Raise a ticket with that information."
+        ],
+        ticket: true
+      }
+    };
+
+    var card = document.getElementById("card");
+    var trail = document.getElementById("trail");
+    var backBtn = document.getElementById("back");
+    var path = []; // visited node ids (stack)
+    var picked = [];  // answers chosen, for the breadcrumb
+
+    function el(tag, cls, text) {
+      var n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text !== undefined) n.textContent = text;
+      return n;
+    }
+
+    function go(id, answer) {
+      path.push(id);
+      picked.push(answer); // always pushed, so Back keeps both stacks in step
+      render();
+    }
+
+    function currentId() { return path[path.length - 1]; }
+
+    function render() {
+      var id = currentId();
+      var node = TREE[id];
+      card.replaceChildren();
+      card.className = "card";
+
+      // breadcrumb of answers
+      trail.replaceChildren();
+      if (picked.length) {
+        trail.append("You said: ");
+        picked.forEach(function (a, i) {
+          if (i) trail.append(" › ");
+          trail.appendChild(el("b", "", a));
+        });
+      }
+
+      if (node.type === "result") {
+        card.className = "card result " + (node.kind === "fixed" ? "fixed" : node.kind === "escalate" ? "escalate" : "");
+        card.appendChild(el("p", "kicker", node.kind === "escalate" ? "Next step" : node.kind === "fixed" ? "Resolved" : "Try this"));
+        card.appendChild(el("h2", "", node.title));
+        if (node.text) card.appendChild(el("p", "", node.text));
+        if (node.steps) {
+          var ol = el("ol");
+          node.steps.forEach(function (s) { ol.appendChild(el("li", "", s)); });
+          card.appendChild(ol);
+        }
+        var row = el("div", "nav");
+        if (node.next) {
+          var done = el("button", "btn primary", "I did this: check the internet");
+          done.type = "button";
+          done.onclick = function () { go(node.next, "Tried: " + node.short); };
+          row.appendChild(done);
+        }
+        if (node.failTo) {
+          var still = el("button", "btn", "Still not working: next question");
+          still.type = "button";
+          still.onclick = function () { go(node.failTo, node.short + ": still not working"); };
+          row.appendChild(still);
+        }
+        if (row.children.length) card.appendChild(row);
+        if (node.ticket) {
+          var links = el("div", "linkrow");
+          var a = el("a", "", "Raise a ticket in the help desk");
+          a.href = "helpdesk.html";
+          links.appendChild(a);
+          card.appendChild(links);
+        }
+      } else {
+        card.appendChild(el("p", "kicker", "Question " + Math.max(1, picked.length + 1)));
+        card.appendChild(el("h2", "", node.q));
+        var box = el("div", "choices");
+        node.options.forEach(function (o) {
+          var b = el("button", "choice", o.label);
+          b.type = "button";
+          if (o.hint) b.appendChild(el("small", "", o.hint));
+          b.onclick = function () {
+            if (o.to === id) { return; } // "I don't know": stay, hint is shown on the button
+            go(o.to, node.short + ": " + o.label.split(",")[0]);
+          };
+          box.appendChild(b);
+        });
+        card.appendChild(box);
+      }
+
+      backBtn.disabled = path.length <= 1;
+      var focus = card.querySelector("h2");
+      if (focus) { focus.tabIndex = -1; focus.focus({ preventScroll: true }); }
+    }
+
+    backBtn.onclick = function () {
+      if (path.length > 1) { path.pop(); picked.pop(); render(); }
+    };
+    document.getElementById("restart").onclick = function () {
+      path = ["start"]; picked = []; render();
+    };
+
+    path = ["start"];
+    render();
+  </script>
+</body>
+</html>

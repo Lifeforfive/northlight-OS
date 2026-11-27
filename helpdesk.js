@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var STORAGE_KEY = "northlight-helpdesk-v1";
+  var STORAGE_KEY = "northlight-helpdesk-v2";
   var HOUR = 60 * 60 * 1000;
   var MINUTE = 60 * 1000;
 
@@ -64,7 +64,13 @@
       make(1004, "Martin Vesely", "Request for a second monitor at my desk.", 1, 1, 6 * HOUR, "New"),
       make(1005, "Lucie Horak", "Wi-Fi drops in meeting room B twice a day.", 2, 2, 90 * MINUTE, "In progress"),
       make(1006, "Petr Dvorak", "Cannot print from laptop to the studio plotter.", 1, 3, 30 * HOUR, "Resolved"),
-      make(1007, "Anna Svoboda", "Archive folder for 2019 projects is missing.", 3, 1, 3 * HOUR, "New")
+      make(1007, "Anna Svoboda", "Archive folder for 2019 projects is missing.", 3, 1, 3 * HOUR, "New"),
+      // Module 1 tickets
+      make(1008, "Studio director", "I can't open my email and my client meeting starts in 30 minutes.", 3, 3, 10 * MINUTE, "New"),
+      make(1009, "Designer", "The second-floor printer prints blank pages.", 2, 1, 2 * HOUR, "New"),
+      make(1010, "HR", "New starter Maya begins Monday. She needs a laptop and accounts.", 2, 2, 1 * HOUR, "New"),
+      make(1011, "Finance", "Three of us got an invoice email with an attachment. One person opened it.", 3, 3, 25 * MINUTE, "New"),
+      make(1012, "Account manager", "Wi-Fi is slow in the meeting room.", 2, 1, 3 * HOUR, "New")
     ];
   }
 
