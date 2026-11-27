@@ -71,7 +71,7 @@ html { scroll-behavior: smooth; }
 .sx-toggle[aria-expanded="true"] span::before { top: 0; transform: rotate(45deg); }
 .sx-toggle[aria-expanded="true"] span::after { top: 0; transform: rotate(-45deg); }
 
-@media (max-width: 48rem) {
+@media (max-width: 56rem) {
   .sx-toggle { display: block; }
   .sx-nav {
     position: absolute; left: 0; right: 0; top: var(--sx-header-h);
@@ -246,6 +246,7 @@ html { scroll-behavior: smooth; }
 body.sx[data-page="helpdesk"] { background-image: radial-gradient(44rem 30rem at 0% 55%, rgba(78, 201, 160, .08), transparent 65%); background-attachment: fixed; }
 body.sx[data-page="crm"]      { background-image: radial-gradient(44rem 30rem at 100% 60%, rgba(217, 178, 76, .09), transparent 65%); background-attachment: fixed; }
 body.sx[data-page="tools"]    { background-image: radial-gradient(44rem 30rem at 50% 100%, rgba(111, 183, 255, .09), transparent 65%); background-attachment: fixed; }
+body.sx[data-page="track"]    { background-image: radial-gradient(44rem 30rem at 0% 70%, rgba(111, 183, 255, .09), transparent 65%), radial-gradient(36rem 26rem at 100% 20%, rgba(217, 178, 76, .06), transparent 65%); background-attachment: fixed; }
 body.sx[data-page="staff"]    { background-image: radial-gradient(44rem 30rem at 100% 40%, rgba(167, 139, 250, .1), transparent 65%); background-attachment: fixed; }
 
 /* ---------- banner signature art (one per page) ---------- */

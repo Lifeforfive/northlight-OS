@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Track Your Request · Northlight Studio</title>
+  <meta name="description" content="Check the status of your request with Northlight Studio: see progress, when to expect a reply and every update.">
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #0f1b2d; --panel: #16253b; --panel-2: #1c2f4a; --line: #2a4060;
+      --text: #f4f1ea; --muted: #a9b6c7;
+      --accent: #f5b942; --accent-ink: #1b1403; --gold: #d9b24c;
+      --ok: #4ec9a0; --bad: #ff7a6b; --blue: #6fb7ff;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    a { color: var(--accent); }
+    .wrap { max-width: 52rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+    h2 { font-size: 1.35rem; margin: 0 0 .5rem; line-height: 1.25; }
+    h3.sub { font-size: 1rem; margin: 1.4rem 0 .6rem; }
+    p { margin: 0 0 .75rem; }
+    .meta, .hint { color: var(--muted); font-size: .9rem; }
+
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 1.5rem; margin-bottom: 1rem; }
+    .panel[hidden] { display: none; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 40rem) { .row { grid-template-columns: 1fr; } }
+    .field { margin-bottom: 1rem; }
+    label { display: block; font-size: .9rem; color: var(--muted); margin-bottom: .3rem; }
+    input { width: 100%; padding: .75rem .9rem; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+    input:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+    [aria-invalid="true"] { border-color: var(--bad); background: #1d1a24; }
+    .error { display: flex; gap: .45rem; margin: .4rem 0 0; color: #ff9a8d; font-size: .9rem; font-weight: 600; }
+    .error[hidden] { display: none; }
+    .error::before { content: "!"; flex: none; width: 1.15rem; height: 1.15rem; margin-top: .15rem; border-radius: 50%; background: var(--bad); color: #2a0a06; font-size: .75rem; font-weight: 800; display: grid; place-items: center; }
+    .notfound { background: #2a1517; border: 1px solid var(--bad); border-left-width: 5px; border-radius: 10px; padding: .8rem 1rem; margin-bottom: 1rem; color: #ffd0c9; }
+    .notfound[hidden] { display: none; }
+
+    .btn { display: inline-block; font: inherit; font-weight: 700; cursor: pointer; text-decoration: none; background: transparent; color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: .65rem 1.2rem; }
+    .btn:hover { border-color: var(--gold); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+    .btn.gold { border-color: var(--gold); color: var(--gold); }
+    .btns { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+
+    /* result */
+    .r-head h2 { font-size: 1.45rem; }
+    #result-h:focus { outline: none; }
+    .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .4rem 0 0; }
+    .chip { font-size: .78rem; padding: .15rem .65rem; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); background: rgba(255, 255, 255, .03); }
+    .chip.sample { color: var(--gold); border-color: var(--gold); }
+
+    .stepper { list-style: none; display: flex; margin: 1.6rem 0 1.2rem; padding: 0; }
+    .stepper li { flex: 1; position: relative; text-align: center; padding-top: 2.6rem; font-size: .85rem; color: var(--muted); }
+    .stepper li strong { display: block; color: var(--text); font-size: .98rem; }
+    .stepper li::before {
+      content: ""; position: absolute; top: 1rem; left: -50%; right: 50%; height: 4px; border-radius: 4px;
+      background: linear-gradient(90deg, var(--ok), var(--gold)) left / 0 100% no-repeat, var(--line);
+      transition: background-size .9s cubic-bezier(.22, 1, .36, 1);
+    }
+    .stepper li:first-child::before { display: none; }
+    .stepper.go li.reached::before { background-size: 100% 100%, 100% 100%; }
+    .stepper li::after {
+      content: ""; position: absolute; top: .35rem; left: 50%; width: 1.7rem; height: 1.7rem; margin-left: -.85rem; z-index: 1;
+      border-radius: 50%; background: var(--panel); border: 2px solid var(--line); display: grid; place-items: center; font-weight: 800; font-size: .9rem; color: var(--accent-ink);
+      transition: background .4s ease .5s, border-color .4s ease .5s;
+    }
+    .stepper li.reached::after { border-color: var(--gold); background: var(--gold); }
+    .stepper li.done::after { content: "\2713"; border-color: var(--ok); background: var(--ok); }
+    .stepper li.current:not(.done)::after { animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(217, 178, 76, .55); } 50% { box-shadow: 0 0 0 9px rgba(217, 178, 76, 0); } }
+
+    .next { background: rgba(255, 255, 255, .04); border: 1px solid var(--line); border-radius: 12px; padding: .9rem 1rem; }
+    .next.late { border-color: var(--gold); background: rgba(217, 178, 76, .08); }
+
+    .tl { list-style: none; margin: 0; padding: 0 0 0 1.1rem; border-left: 2px solid var(--line); }
+    .tl li { position: relative; padding: 0 0 1rem 1rem; }
+    .tl li::before { content: ""; position: absolute; left: -1.62rem; top: .4rem; width: .8rem; height: .8rem; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px var(--panel); }
+    .tl li:first-child::before { background: var(--ok); }
+    .tl time { color: var(--muted); font-size: .82rem; }
+    .tl p { margin: .15rem 0 0; }
+    .actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1rem; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .stepper li.current:not(.done)::after { animation: none; }
+      .stepper li::before, .stepper li::after { transition: none; }
+    }
+    #toast { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); background: var(--ok); color: #04261b; padding: .6rem 1rem; border-radius: 8px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 60; }
+    #toast.show { opacity: 1; }
+    .privacy { color: var(--muted); font-size: .85rem; margin-top: 1rem; }
+    footer { color: var(--muted); font-size: .85rem; padding: 0 1rem 2rem; text-align: center; }
+  </style>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body class="sx" data-page="track" style="--sx-max:52rem">
+  <a class="sx-skip" href="#sx-main">Skip to content</a>
+  <header class="sx-header">
+    <div class="sx-wrap">
+      <a class="sx-brand" href="index.html"><img src="logo.svg" width="34" height="34" alt="Northlight Studio logo"><span>Northlight <b>Studio</b></span></a>
+      <button class="sx-toggle" id="sx-toggle" type="button" aria-expanded="false" aria-controls="sx-nav" aria-label="Menu"><span></span></button>
+      <nav class="sx-nav" id="sx-nav" aria-label="Main">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="helpdesk.html">Help desk</a></li>
+          <li><a href="crm.html">CRM</a></li>
+          <li><a href="troubleshoot.html">PC &amp; network tools</a></li>
+          <li><a href="staff.html">Staff access</a></li>
+          <li><a href="track.html" aria-current="page">Track request</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <section class="sx-banner" aria-labelledby="sx-h1">
+    <div class="sx-stars" aria-hidden="true"></div>
+    <canvas class="sx-aurora" data-palette="track" aria-hidden="true"></canvas>
+    <svg class="sx-art" viewBox="0 0 220 140" aria-hidden="true" focusable="false">
+      <path d="M30 70 H190" stroke="#2a4060" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <path class="sx-flow" d="M30 70 H190" stroke="#4ec9a0" stroke-width="3" stroke-dasharray="6 8" fill="none"/>
+      <circle class="sx-packet" cx="30" cy="70" r="5" fill="#d9b24c"/>
+      <circle cx="30" cy="70" r="12" fill="#16253b" stroke="#6fb7ff" stroke-width="2.5"/>
+      <circle cx="110" cy="70" r="12" fill="#16253b" stroke="#d9b24c" stroke-width="2.5"/>
+      <circle cx="190" cy="70" r="12" fill="#16253b" stroke="#4ec9a0" stroke-width="2.5"/>
+      <path d="M183 70 l5 5 l9 -10" fill="none" stroke="#4ec9a0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="30" y="106" text-anchor="middle" font-size="10" fill="#a9b6c7">Received</text>
+      <text x="110" y="106" text-anchor="middle" font-size="10" fill="#a9b6c7">In progress</text>
+      <text x="190" y="106" text-anchor="middle" font-size="10" fill="#a9b6c7">Resolved</text>
+    </svg>
+    <div class="sx-wrap sx-banner-inner">
+      <p class="sx-eyebrow">Customers</p>
+      <h1 id="sx-h1">Track your request</h1>
+      <p class="sx-lead">Enter your reference and the email you used. You will see where things stand, when to expect a reply, and every update.</p>
+    </div>
+  </section>
+
+  <main class="wrap" id="sx-main">
+    <div class="panel sx-rise" id="lookup-window" data-win="find-request" data-tone="teal" data-skin="glass">
+      <div id="form-err" class="notfound" role="alert" hidden></div>
+      <form id="lookup" novalidate>
+        <div class="row">
+          <div class="field">
+            <label for="ref">Reference</label>
+            <input id="ref" autocomplete="off" maxlength="20" placeholder="e.g. C-1001 or 1013" aria-describedby="ref-err">
+            <p class="error" id="ref-err" hidden></p>
+          </div>
+          <div class="field">
+            <label for="email">Email address</label>
+            <input id="email" type="email" autocomplete="email" inputmode="email" maxlength="120" placeholder="the email you used" aria-describedby="email-err">
+            <p class="error" id="email-err" hidden></p>
+          </div>
+        </div>
+        <div class="btns">
+          <button class="btn primary" type="submit">Check status</button>
+          <button class="btn" id="demo" type="button">See a sample request</button>
+        </div>
+        <p class="privacy">We only show a request when the reference and the email match. You get your reference when you send the contact form, or from our team.</p>
+      </form>
+    </div>
+
+    <div class="panel" id="result" data-win="request" data-tone="blue" data-skin="neon" aria-live="polite" hidden></div>
+
+    <p class="meta" style="text-align:center">Demo site: requests are saved in this browser only, so you can track requests made here. All data is fake.</p>
+  </main>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="track.js"></script>
+  <script src="site.js"></script>
+</body>
+</html>

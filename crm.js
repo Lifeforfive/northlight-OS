@@ -25,7 +25,11 @@
       contacts: [],
       opps: [],
       cases: [
-        { id: 4, subject: "Brand guidelines PDF will not download", customer: "Demo Customer Ltd", priority: "High", due: now + 2 * HOUR, status: "Open", created: now - 1 * HOUR }
+        {
+          id: 4, ref: "C-1001", subject: "Brand guidelines PDF will not download", customer: "Demo Customer Ltd",
+          email: "demo.customer@example.com", priority: "High", due: now + 2 * HOUR, status: "Open", created: now - 1 * HOUR,
+          events: [{ t: now - 1 * HOUR, text: "Request received. A team member will pick this up shortly." }]
+        }
       ]
     };
   }
@@ -37,10 +41,22 @@
       var raw = localStorage.getItem(KEY);
       if (raw) {
         var d = JSON.parse(raw);
-        if (d && Array.isArray(d.leads) && Array.isArray(d.opps)) return d;
+        if (d && Array.isArray(d.leads) && Array.isArray(d.opps)) return migrate(d);
       }
     } catch (e) { /* blocked or corrupt: use seed */ }
     return null;
+  }
+
+  // Older saved data has cases without a reference, email or updates: fill those in.
+  function migrate(d) {
+    var next = 1001;
+    (d.cases || []).forEach(function (c) { var n = parseInt(String(c.ref || "").replace(/\D/g, ""), 10); if (n >= next) next = n + 1; });
+    (d.cases || []).forEach(function (c) {
+      if (!c.ref) c.ref = "C-" + (next++);
+      if (typeof c.email !== "string") c.email = "";
+      if (!Array.isArray(c.events)) c.events = [{ t: c.created || Date.now(), text: "Request received." }];
+    });
+    return d;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { /* ignore */ } }
   function nid() { return db.nextId++; }
@@ -151,14 +167,56 @@
     if (o && STAGES.indexOf(stage) >= 0) { o.stage = stage; save(); render(); }
   }
 
-  function addCase(subject, customer, priority, dueMs) {
-    db.cases.push({ id: nid(), subject: subject.trim(), customer: customer.trim(), priority: priority, due: dueMs, status: "Open", created: Date.now() });
-    save(); render(); toast("Case created");
+  var CASE_STATUSES = ["Open", "In progress", "Closed"];
+  // What the customer sees on the tracking page for each internal status.
+  var STATUS_TEXT = {
+    "Open": "We have received your request and will pick it up soon.",
+    "In progress": "We are working on your request.",
+    "Closed": "Your request is marked as resolved."
+  };
+
+  function isOpenCase(c) { return c.status !== "Closed"; }
+
+  function nextCaseRef() {
+    var n = db.cases.reduce(function (m, c) { return Math.max(m, parseInt(String(c.ref || "").replace(/\D/g, ""), 10) || 0); }, 1000);
+    return "C-" + (n + 1);
   }
 
-  function toggleCase(id) {
+  function addCase(subject, customer, email, priority, dueMs) {
+    var now = Date.now();
+    var c = {
+      id: nid(), ref: nextCaseRef(), subject: subject.trim(), customer: customer.trim(), email: email.trim(),
+      priority: priority, due: dueMs, status: "Open", created: now,
+      events: [{ t: now, text: "Request received. A team member will pick this up shortly." }]
+    };
+    db.cases.push(c);
+    save(); render(); toast("Case " + c.ref + " created");
+  }
+
+  // Changes the status and (optionally) posts a note the customer can read on the tracking page.
+  function postUpdate(id, status, note) {
     var c = byId(db.cases, id);
-    if (c) { c.status = c.status === "Open" ? "Closed" : "Open"; save(); render(); }
+    if (!c || CASE_STATUSES.indexOf(status) < 0) return;
+    var text = note.trim();
+    var changed = c.status !== status;
+    c.status = status;
+    if (changed || text) {
+      var lead = changed ? (status === "Closed" ? "Resolved. " : status === "In progress" ? "We are working on it. " : "Reopened. ") : "";
+      c.events.push({ t: Date.now(), text: (lead + text).trim() });
+    }
+    save(); render();
+    toast(c.email ? "Update posted. " + c.ref + " shows it on the tracking page" : "Update saved (no customer email on this case)");
+  }
+
+  function trackingLink(c) {
+    return new URL("track.html?ref=" + encodeURIComponent(c.ref), location.href).href;
+  }
+
+  function copyTrackingLink(c) {
+    var link = trackingLink(c);
+    var done = function (ok) { toast(ok ? "Tracking link for " + c.ref + " copied" : "Copy this link: " + link); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(function () { done(true); }, function () { done(false); });
+    else done(false);
   }
 
   function resetDemo() {
@@ -171,14 +229,14 @@
 
   // ---------- tiles ----------
 
-  function isOverdue(c, now) { return c.status === "Open" && now > c.due; }
+  function isOverdue(c, now) { return isOpenCase(c) && now > c.due; }
 
   function renderTiles() {
     var now = Date.now();
     var openLeads = db.leads.filter(function (l) { return l.status === "New"; }).length;
     var pipeline = db.opps.filter(function (o) { return o.stage === "Lead" || o.stage === "Qualified" || o.stage === "Quote"; })
       .reduce(function (s, o) { return s + o.value; }, 0);
-    var openCases = db.cases.filter(function (c) { return c.status === "Open"; });
+    var openCases = db.cases.filter(isOpenCase);
     var late = openCases.filter(function (c) { return isOverdue(c, now); }).length;
     var data = [
       [String(openLeads), "Open leads"],
@@ -326,13 +384,15 @@
     var form = el("form", "inline");
     var s = input("cs", "text", { required: true, maxLength: 120, placeholder: "What is the problem?" });
     var cu = input("cc", "text", { required: true, maxLength: 60, placeholder: "Customer" });
+    var em = input("ce", "email", { required: true, maxLength: 80, placeholder: "customer@company.example" });
     var p = el("select"); p.id = "cp";
     PRIORITIES.forEach(function (x) { var o = el("option", "", x); o.value = x; if (x === "Medium") o.selected = true; p.appendChild(o); });
     var d = input("cd", "datetime-local", { required: true, value: toLocalInput(Date.now() + 4 * HOUR) });
     form.appendChild(field("Subject", s));
     form.appendChild(field("Customer", cu));
+    form.appendChild(field("Customer email", em));
     form.appendChild(field("Priority", p));
-    form.appendChild(field("Due", d));
+    form.appendChild(field("Respond by", d));
     var go = el("button", "btn primary", "Create case");
     go.type = "submit";
     form.appendChild(go);
@@ -340,14 +400,14 @@
       ev.preventDefault();
       var due = new Date(d.value).getTime();
       if (isNaN(due)) return;
-      addCase(s.value, cu.value, p.value, due);
+      addCase(s.value, cu.value, em.value, p.value, due);
     };
     box.appendChild(form);
 
     if (!db.cases.length) return box.appendChild(el("p", "empty", "No cases."));
     var now = Date.now();
     var list = db.cases.slice().sort(function (a, b) {
-      if (a.status !== b.status) return a.status === "Open" ? -1 : 1;
+      if (isOpenCase(a) !== isOpenCase(b)) return isOpenCase(a) ? -1 : 1;
       var pa = PRIORITIES.indexOf(a.priority), pb = PRIORITIES.indexOf(b.priority);
       if (pa !== pb) return pa - pb;
       return a.due - b.due;
@@ -355,12 +415,38 @@
     var rows = list.map(function (c) {
       var due = el("span", isOverdue(c, now) ? "late" : "", new Date(c.due).toLocaleString());
       if (isOverdue(c, now)) due.appendChild(el("span", "overdue", "Overdue"));
-      return [c.subject, c.customer, badge("pr-" + c.priority, c.priority), due,
-        badge(c.status === "Open" ? "b-new" : "b-closed", c.status),
-        btn(c.status === "Open" ? "Close" : "Reopen", "small", function () { toggleCase(c.id); })];
+      var sel = el("select");
+      sel.setAttribute("aria-label", "Status of " + c.ref);
+      CASE_STATUSES.forEach(function (st) { var op = el("option", "", st); op.value = st; if (st === c.status) op.selected = true; sel.appendChild(op); });
+      sel.onchange = function () { postUpdate(c.id, sel.value, ""); };
+      var link = btn("Copy link", "small", function () { copyTrackingLink(c); });
+      link.title = c.email ? "Copy the customer tracking link" : "No customer email on this case, so it cannot be tracked";
+      link.disabled = !c.email;
+      return [el("span", "ref", c.ref), c.subject, c.customer, badge("pr-" + c.priority, c.priority), due, sel, link];
     });
-    box.appendChild(table([{ t: "Subject" }, { t: "Customer" }, { t: "Priority" }, { t: "Due" }, { t: "Status" }, { t: "" }], rows,
-      function (i) { return list[i].status === "Closed" ? "done" : ""; }));
+    box.appendChild(table([{ t: "Ref" }, { t: "Subject" }, { t: "Customer" }, { t: "Priority" }, { t: "Respond by" }, { t: "Status" }, { t: "Tracking" }], rows,
+      function (i) { return isOpenCase(list[i]) ? "" : "done"; }));
+
+    // Post a customer-visible update. The customer sees it on track.html.
+    var open = list.filter(isOpenCase);
+    if (open.length) {
+      var uf = el("form", "inline update");
+      var cs = el("select"); cs.id = "uc";
+      open.forEach(function (c) { var o = el("option", "", c.ref + " · " + c.subject); o.value = String(c.id); cs.appendChild(o); });
+      var us = el("select"); us.id = "us";
+      ["In progress", "Closed", "Open"].forEach(function (st) { var o = el("option", "", st === "Closed" ? "Resolved" : st); o.value = st; us.appendChild(o); });
+      var note = input("un", "text", { required: true, maxLength: 240, placeholder: "e.g. We found the cause and are fixing it today." });
+      uf.appendChild(field("Case", cs));
+      uf.appendChild(field("New status", us));
+      uf.appendChild(field("Message to the customer", note));
+      var ub = el("button", "btn gold", "Post update");
+      ub.type = "submit";
+      uf.appendChild(ub);
+      uf.onsubmit = function (ev) { ev.preventDefault(); postUpdate(Number(cs.value), us.value, note.value); };
+      box.appendChild(el("h3", "sub", "Post an update to the customer"));
+      box.appendChild(uf);
+      box.appendChild(el("p", "meta", "Customers read updates on the tracking page with their reference and email. Use Copy link to share it."));
+    }
   }
 
   var TABS = [
@@ -368,7 +454,7 @@
     ["accounts", "Accounts", function () { return db.accounts.length; }, panelAccounts],
     ["contacts", "Contacts", function () { return db.contacts.length; }, panelContacts],
     ["opps", "Opportunities", function () { return db.opps.length; }, panelOpps],
-    ["cases", "Cases", function () { return db.cases.filter(function (c) { return c.status === "Open"; }).length; }, panelCases]
+    ["cases", "Cases", function () { return db.cases.filter(isOpenCase).length; }, panelCases]
   ];
 
   function render() {
@@ -388,6 +474,8 @@
     panel.replaceChildren();
     TABS.filter(function (t) { return t[0] === state.tab; })[0][3](panel);
   }
+
+  save(); // store the data on first load so the customer tracking page can find the sample case
 
   $("m-count").onclick = function () { state.mode = "count"; renderChart(); };
   $("m-value").onclick = function () { state.mode = "value"; renderChart(); };

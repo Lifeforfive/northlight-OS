@@ -208,7 +208,8 @@
       priority: priorityFor(impact, data.urgency),
       status: "New",
       created: Date.now(),
-      source: "website"
+      source: "website",
+      email: data.email // lets the customer track it on track.html
     };
     list.push(ticket);
     localStorage.setItem(HELPDESK_KEY, JSON.stringify(list));
@@ -267,7 +268,8 @@
       return;
     }
     $("success-title").textContent = "Thank you, " + data.name.split(" ")[0] + "!";
-    $("success-text").textContent = "Your request is ticket #" + ticket.id + " in our help desk. We will reply to " + data.email + " within one working day.";
+    $("success-text").textContent = "Your request is ticket #" + ticket.id + " in our help desk. We will reply to " + data.email + " within one working day. Keep that number: with your email it lets you follow progress.";
+    $("track-link").href = "track.html?ref=" + ticket.id;
     form.hidden = true;
     $("success").hidden = false;
     $("success").focus();

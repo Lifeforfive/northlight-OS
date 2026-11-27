@@ -83,7 +83,7 @@ p { margin: 0; }
 .nav-toggle[aria-expanded="true"] span::before { top: 0; transform: rotate(45deg); }
 .nav-toggle[aria-expanded="true"] span::after { top: 0; transform: rotate(-45deg); }
 
-@media (max-width: 56rem) {
+@media (max-width: 64rem) {
   .nav-toggle { display: block; }
   .nav {
     position: absolute; left: 0; right: 0; top: var(--header-h);
