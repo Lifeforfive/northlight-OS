@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Help Desk · Northlight Studio</title>
+  <meta name="description" content="Northlight Studio help desk: raise and track support tickets.">
+  <link rel="stylesheet" href="helpdesk.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap bar">
+      <a class="brand" href="index.html">Northlight <span>Studio</span></a>
+      <a href="index.html">Home</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Help Desk</h1>
+    <p class="lead">Raise a ticket. Priority is worked out from impact and urgency, and every priority has a response target.</p>
+
+    <section aria-labelledby="new-h">
+      <h2 id="new-h">New ticket</h2>
+      <form id="ticket-form">
+        <div class="field">
+          <label for="requester">Requester</label>
+          <input id="requester" required maxlength="80" placeholder="e.g. Jana Novak">
+        </div>
+        <div class="field">
+          <label for="issue">Issue</label>
+          <textarea id="issue" required maxlength="500" placeholder="What is wrong?"></textarea>
+        </div>
+        <div class="grid">
+          <div class="field">
+            <label for="impact">Impact</label>
+            <select id="impact">
+              <option value="3">High: whole studio or a client deliverable</option>
+              <option value="2" selected>Medium: a team</option>
+              <option value="1">Low: one person</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="urgency">Urgency</label>
+            <select id="urgency">
+              <option value="3">High: work is blocked</option>
+              <option value="2" selected>Medium: workaround exists</option>
+              <option value="1">Low: can wait</option>
+            </select>
+          </div>
+        </div>
+        <p id="preview" class="preview" aria-live="polite"></p>
+        <button class="btn" type="submit">Create ticket</button>
+        <p class="note">Demo only: all data is fake and saved just in this browser (localStorage).</p>
+      </form>
+    </section>
+
+    <section aria-labelledby="list-h">
+      <div class="list-head">
+        <h2 id="list-h">Tickets</h2>
+        <button id="reset" class="btn ghost" type="button">Reset demo data</button>
+      </div>
+      <ul class="targets" aria-label="Response targets">
+        <li><span class="pill p1">P1</span> respond within 1 hour</li>
+        <li><span class="pill p2">P2</span> respond within 4 hours</li>
+        <li><span class="pill p3">P3</span> respond within 24 hours</li>
+      </ul>
+      <p id="summary" class="note"></p>
+      <div id="tickets"></div>
+    </section>
+  </main>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="helpdesk.js"></script>
+</body>
+</html>
