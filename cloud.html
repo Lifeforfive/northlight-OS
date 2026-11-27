@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cloud Blueprint · Northlight Studio</title>
+  <meta name="description" content="The Northlight Studio cloud plan drawn as a blueprint: resource group, web app and storage with their tags, checked live against the naming rules.">
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #0a1830; --ink: #e9eef6; --mute: #8fa6c4; --line: rgba(111, 183, 255, .22);
+      --gold: #d9b24c; --ok: #4ec9a0; --bad: #ff7a6b; --blue: #6fb7ff;
+      --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+      --grid: linear-gradient(rgba(111, 183, 255, .06) 1px, transparent 1px), linear-gradient(90deg, rgba(111, 183, 255, .06) 1px, transparent 1px),
+              linear-gradient(rgba(111, 183, 255, .12) 1px, transparent 1px), linear-gradient(90deg, rgba(111, 183, 255, .12) 1px, transparent 1px);
+      --grid-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0a1830; color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.6; }
+    a { color: var(--gold); }
+    :focus-visible { outline: 2px solid #f5b942; outline-offset: 3px; }
+    .bp { max-width: 64rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+    /* the drawing sheets: grid paper with gold corner marks */
+    .sheet { position: relative; background-color: #0b1b36; background-image: var(--grid); background-size: var(--grid-size); border: 1px solid var(--line); margin-bottom: 1.4rem; }
+    .cm { position: absolute; width: 18px; height: 18px; border: 0 solid var(--gold); pointer-events: none; }
+    .cm.tl { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+    .cm.tr { top: -1px; right: -1px; border-top-width: 2px; border-right-width: 2px; }
+    .cm.bl { bottom: -1px; left: -1px; border-bottom-width: 2px; border-left-width: 2px; }
+    .cm.br { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
+    .tab { position: absolute; top: -.7rem; left: 1.2rem; background: #0a1830; padding: 0 .6rem; font: 600 .66rem var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--gold); }
+
+    .hero { padding: clamp(2.4rem, 7vw, 4rem) clamp(1.2rem, 4vw, 2.6rem) 2.2rem; }
+    .kicker { margin: 0 0 1rem; font: 600 .7rem var(--mono); letter-spacing: .24em; text-transform: uppercase; color: var(--gold); }
+    h1 { margin: 0; font-weight: 200; font-size: clamp(2.8rem, 9vw, 5rem); letter-spacing: .22em; text-transform: uppercase; line-height: 1.05; }
+    .dim { position: relative; margin: 1.3rem 0 1.2rem; height: 14px; max-width: 28rem; }
+    .dim::before { content: ""; position: absolute; left: 0; right: 0; top: 6px; height: 1px; background: var(--gold); }
+    .dim::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 13px; background: linear-gradient(var(--gold), var(--gold)) left / 1px 100% no-repeat, linear-gradient(var(--gold), var(--gold)) right / 1px 100% no-repeat; }
+    .dim span { position: absolute; left: 50%; top: -1px; transform: translateX(-50%); background: #0b1b36; padding: 0 .6rem; font: 500 .66rem var(--mono); letter-spacing: .12em; color: var(--gold); white-space: nowrap; }
+    .lead { max-width: 36rem; margin: 0; color: var(--mute); font-size: 1.05rem; }
+
+    .bar { display: flex; flex-wrap: wrap; gap: .5rem 1.2rem; align-items: center; justify-content: space-between; padding: 1.2rem 1.4rem .4rem; }
+    .badge { display: inline-flex; align-items: center; gap: .55rem; font: 600 .78rem var(--mono); letter-spacing: .06em; padding: .3rem .9rem; border: 1px solid var(--ok); color: var(--ok); border-radius: 999px; }
+    .badge::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: currentColor; }
+    .badge.bad { border-color: var(--bad); color: var(--bad); }
+    .hint { color: var(--mute); font-size: .85rem; }
+
+    .diagram { padding: .4rem .8rem 1rem; }
+    .diagram svg { display: block; width: 100%; height: auto; }
+    .none { padding: 1.5rem; color: var(--bad); font-family: var(--mono); font-size: .9rem; }
+
+    /* drawing elements (inside the SVG) */
+    svg text { font-family: var(--mono); }
+    .lbl { fill: #9fc3ee; font-size: 10.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+    .nm { fill: var(--ink); font-size: 14px; font-weight: 600; }
+    .sub { fill: var(--mute); font-size: 10.5px; }
+    .rgbox { fill: rgba(111, 183, 255, .035); stroke: var(--blue); stroke-width: 1.4; stroke-dasharray: 8 6; }
+    .rgbox.bad { stroke: var(--bad); }
+    .rgtab rect { fill: #0a1830; stroke: var(--blue); stroke-width: 1.2; }
+    .rgtab.bad rect { stroke: var(--bad); }
+    .rgtab text { fill: #cfe3ff; font-size: 11px; font-weight: 600; letter-spacing: .08em; }
+    .rgtab .mark { fill: var(--ok); font-size: 13px; }
+    .rgtab.bad .mark { fill: var(--bad); }
+    .node { cursor: pointer; outline: none; }
+    .node .body { fill: #0e2341; stroke: var(--ok); stroke-width: 2; transition: fill .25s ease, stroke-width .25s ease; }
+    .node.bad .body { stroke: var(--bad); }
+    .node:hover .body, .node:focus-visible .body { fill: #123058; stroke-width: 3; }
+    .node.sel .body { fill: #143a66; stroke-width: 3; }
+    .node:focus-visible .body { stroke: #f5b942; }
+    .node .ico { fill: none; stroke: var(--blue); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .node .tick { fill: var(--ok); font-size: 16px; font-weight: 700; }
+    .node.bad .tick { fill: var(--bad); }
+    .stem { stroke: rgba(217, 178, 76, .4); stroke-width: 1; stroke-dasharray: 3 3; }
+    .chip rect { fill: rgba(217, 178, 76, .07); stroke: rgba(217, 178, 76, .45); stroke-width: 1; }
+    .chip text { fill: #ecdcab; font-size: 10.5px; }
+    .chip .k { fill: var(--gold); }
+    .chip.bad rect { fill: rgba(255, 122, 107, .1); stroke: var(--bad); stroke-dasharray: 4 3; }
+    .chip.bad text { fill: #ffb5ab; }
+    .flow { fill: none; stroke: var(--gold); stroke-width: 2; stroke-dasharray: 6 7; animation: flow 1.1s linear infinite; }
+    @keyframes flow { to { stroke-dashoffset: -26; } }
+    .arrow { fill: var(--gold); }
+    .dimline { stroke: var(--gold); stroke-width: 1; }
+    .dimtxt { fill: var(--gold); font-size: 10.5px; letter-spacing: .1em; }
+
+    /* the title block, like the corner of an engineering drawing */
+    .tblock { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 1.2rem 1.2rem auto; max-width: 34rem; border: 2px solid rgba(217, 178, 76, .7); outline: 1px solid rgba(217, 178, 76, .35); outline-offset: 3px; background: rgba(10, 24, 48, .85); }
+    .tblock div { padding: .45rem .7rem; border-right: 1px solid rgba(217, 178, 76, .35); border-bottom: 1px solid rgba(217, 178, 76, .35); min-width: 0; }
+    .tblock div:nth-child(3n) { border-right: 0; } .tblock div:nth-last-child(-n+3) { border-bottom: 0; }
+    .tblock small { display: block; font: 600 .56rem var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--gold); }
+    .tblock b { display: block; font: 500 .82rem var(--mono); font-weight: 500; overflow-wrap: anywhere; }
+    .tblock .res.ok { color: var(--ok); } .tblock .res.bad { color: var(--bad); }
+    @media (max-width: 40rem) { .tblock { grid-template-columns: 1fr 1fr; margin-left: 1.2rem; } .tblock div:nth-child(3n) { border-right: 1px solid rgba(217, 178, 76, .35); } .tblock div:nth-child(2n) { border-right: 0; } .tblock div:nth-last-child(-n+3) { border-bottom: 1px solid rgba(217, 178, 76, .35); } .tblock div:nth-last-child(-n+2) { border-bottom: 0; } }
+
+    /* panels below */
+    .pad { padding: 1.7rem clamp(1.1rem, 3vw, 2rem) 1.6rem; }
+    h2 { margin: 0 0 1rem; font: 600 .74rem var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--ink); }
+    h3 { margin: 0 0 .6rem; font-size: 1.15rem; font-weight: 500; }
+    .kv { display: grid; grid-template-columns: max-content 1fr; gap: .15rem 1.2rem; margin: 0 0 1rem; font: 400 .84rem var(--mono); }
+    .kv dt { color: var(--mute); } .kv dd { margin: 0; overflow-wrap: anywhere; }
+    .checks { list-style: none; margin: 0; padding: 0; font: 400 .82rem var(--mono); }
+    .checks li { display: grid; grid-template-columns: 3rem 7rem 1fr; gap: .6rem; padding: .3rem 0; border-bottom: 1px solid rgba(111, 183, 255, .14); }
+    .checks .p { color: var(--ok); font-weight: 700; } .checks .f { color: var(--bad); font-weight: 700; }
+    .checks .c { color: var(--mute); }
+    @media (max-width: 40rem) { .checks li { grid-template-columns: 2.6rem 1fr; } .checks .c { display: none; } }
+
+    table { width: 100%; border-collapse: collapse; font: 400 .82rem var(--mono); }
+    th, td { text-align: left; padding: .5rem .7rem .5rem 0; border-bottom: 1px solid rgba(111, 183, 255, .16); vertical-align: top; }
+    th { color: var(--gold); font-weight: 600; font-size: .66rem; letter-spacing: .16em; text-transform: uppercase; white-space: nowrap; }
+    .tw { overflow-x: auto; }
+    .rules-tags { margin: 1.1rem 0 0; padding-left: 1.1rem; color: var(--mute); font-size: .9rem; }
+    .rules-tags code, .lead code { background: rgba(111, 183, 255, .1); border: 1px solid var(--line); padding: .02rem .35rem; font: .85em var(--mono); color: var(--ink); }
+
+    .pg { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.2rem; }
+    .pg > div { min-width: 0; }
+    @media (max-width: 52rem) { .pg { grid-template-columns: 1fr; } }
+    textarea { width: 100%; min-height: 21rem; resize: vertical; padding: .8rem; font: 400 .78rem/1.5 var(--mono); color: #cfe3ff; background: #071329; border: 1px solid var(--line); tab-size: 2; white-space: pre; overflow: auto; }
+    textarea:focus { outline: 2px solid #f5b942; outline-offset: 2px; }
+    #out { margin: 0; padding: .8rem; min-height: 21rem; max-height: 28rem; overflow: auto; font: 400 .74rem/1.55 var(--mono); background: #071329; border: 1px solid var(--line); }
+    #out .p { color: var(--ok); } #out .f { color: var(--bad); } #out .s { color: var(--gold); display: block; margin-top: .6rem; }
+    .btns { display: flex; flex-wrap: wrap; gap: .5rem; margin: .8rem 0 0; align-items: center; }
+    .btn { font: 600 .74rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); background: transparent; border: 1px solid rgba(217, 178, 76, .6); padding: .5rem .9rem; cursor: pointer; transition: background .25s ease, border-color .25s ease, transform .25s ease; }
+    .btn:hover { background: rgba(217, 178, 76, .12); border-color: var(--gold); transform: translateY(-1px); }
+    .btn:active { transform: none; }
+    .msg { color: var(--bad); font: 400 .78rem var(--mono); margin: .5rem 0 0; min-height: 1.2rem; }
+
+    @media (prefers-reduced-motion: reduce) { .flow { animation: none; } .btn, .node .body { transition: none; } }
+  </style>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body class="sx" data-page="cloud" style="--sx-max:64rem">
+  <a class="sx-skip" href="#sx-main">Skip to content</a>
+  <header class="sx-header">
+    <div class="sx-wrap">
+      <a class="sx-brand" href="index.html"><img src="logo.svg" width="34" height="34" alt="Northlight Studio logo"><span>Northlight <b>Studio</b></span></a>
+      <button class="sx-toggle" id="sx-toggle" type="button" aria-expanded="false" aria-controls="sx-nav" aria-label="Menu"><span></span></button>
+      <nav class="sx-nav" id="sx-nav" aria-label="Main">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="helpdesk.html">Help desk</a></li>
+          <li><a href="crm.html">CRM</a></li>
+          <li><a href="troubleshoot.html">PC tools</a></li>
+          <li><a href="staff.html">Staff access</a></li>
+          <li><a href="track.html">Track</a></li>
+          <li><a href="automation.html">Automation</a></li>
+          <li><a href="logs.html">Logs</a></li>
+          <li><a href="cloud.html" aria-current="page">Cloud</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="bp" id="sx-main">
+    <section class="sheet hero" aria-labelledby="sx-h1">
+      <i class="cm tl"></i><i class="cm tr"></i><i class="cm bl"></i><i class="cm br"></i>
+      <p class="kicker">Sheet 01 &middot; Cloud plan</p>
+      <h1 id="sx-h1">Cloud</h1>
+      <div class="dim" aria-hidden="true"><span id="dim-text">1 group &middot; 2 resources</span></div>
+      <p class="lead">The Northlight plan drawn as a blueprint. It is read from <code>northlight.cloud.json</code> and checked with the same rules as the deploy check, so a box turns <span style="color:var(--bad)">red</span> the moment a tag or a name is wrong. Nothing here is deployed.</p>
+    </section>
+
+    <section class="sheet" aria-label="Architecture diagram">
+      <i class="cm tl"></i><i class="cm tr"></i><i class="cm bl"></i><i class="cm br"></i>
+      <span class="tab">Plan view</span>
+      <div class="bar">
+        <span class="badge" id="badge" role="status" aria-live="polite">Checking&hellip;</span>
+        <span class="hint">Select a box to see its checks.</span>
+      </div>
+      <div class="diagram" id="diagram"></div>
+      <div class="tblock" id="tblock" aria-label="Title block"></div>
+    </section>
+
+    <section class="sheet" aria-labelledby="h-detail">
+      <i class="cm tl"></i><i class="cm tr"></i><i class="cm bl"></i><i class="cm br"></i>
+      <span class="tab">Detail</span>
+      <div class="pad" id="detail"><h2 id="h-detail">Selected resource</h2></div>
+    </section>
+
+    <section class="sheet" aria-labelledby="h-rules">
+      <i class="cm tl"></i><i class="cm tr"></i><i class="cm bl"></i><i class="cm br"></i>
+      <span class="tab">Rules</span>
+      <div class="pad">
+        <h2 id="h-rules">Naming and tag rules</h2>
+        <div class="tw"><table>
+          <thead><tr><th>Type</th><th>Prefix</th><th>Length</th><th>Allowed characters</th><th>Example</th></tr></thead>
+          <tbody id="rules"></tbody>
+        </table></div>
+        <ul class="rules-tags" id="rules-tags"></ul>
+      </div>
+    </section>
+
+    <section class="sheet" aria-labelledby="h-play">
+      <i class="cm tl"></i><i class="cm tr"></i><i class="cm bl"></i><i class="cm br"></i>
+      <span class="tab">Playground</span>
+      <div class="pad">
+        <h2 id="h-play">Try to break it</h2>
+        <p class="hint" style="margin:0 0 1rem">Edit the plan on the left. The drawing above and the result on the right update as you type. This is exactly what <code>node tools/check-cloud.js</code> prints for the same file.</p>
+        <div class="pg">
+          <div>
+            <label for="pg" class="hint">northlight.cloud.json (your edits are not saved)</label>
+            <textarea id="pg" spellcheck="false" aria-describedby="pg-msg"></textarea>
+            <p class="msg" id="pg-msg" role="alert"></p>
+            <div class="btns">
+              <button class="btn" id="b-tag" type="button">Break a tag</button>
+              <button class="btn" id="b-name" type="button">Break a name</button>
+              <button class="btn" id="b-reset" type="button">Reset to the real plan</button>
+            </div>
+          </div>
+          <div>
+            <span class="hint">Result</span>
+            <pre id="out" aria-live="polite"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="sitelog.js"></script>
+  <script src="tools/check-cloud.js"></script>
+  <script src="cloud.js"></script>
+  <script src="site.js"></script>
+  <script src="statusbar.js"></script>
+</body>
+</html>

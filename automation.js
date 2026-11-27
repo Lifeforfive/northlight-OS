@@ -21,7 +21,8 @@
     outbox: "northlight-outbox-v1",
     log: "northlight-logs-v1"
   };
-  var MAX_LOG = 1000, MAX_OUTBOX = 200;
+  var cfg = typeof globalThis !== "undefined" ? globalThis.NorthlightConfig : null;   // config.js, when it is loaded
+  var MAX_LOG = (cfg && cfg.logs && cfg.logs.maxEntries) || 1000, MAX_OUTBOX = 200;
   var FREE_MAIL = ["gmail", "outlook", "hotmail", "yahoo", "icloud", "seznam", "proton", "protonmail", "live", "aol"];
 
   // Used only if rules.json cannot be loaded (for example when a page is opened as a file).

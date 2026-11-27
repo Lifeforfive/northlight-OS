@@ -22,6 +22,19 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+
+      # The two checks below must pass before anything is deployed.
+      # If one fails, the job stops here and the site is NOT published.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Check the cloud description (names and tags)
+        run: node tools/check-cloud.js
+
+      - name: Check health.json and stamp today's build date
+        run: node tools/stamp-health.js --stamp
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

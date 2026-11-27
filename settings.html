@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data &amp; Health · Northlight Studio</title>
+  <meta name="description" content="Version and build date, site settings, what is stored in this browser, and a one-click export of all of it.">
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #0f1b2d; --ink: #f4f1ea; --mute: #8a9ab0; --line: rgba(169, 182, 199, .16);
+      --gold: #d9b24c; --ok: #4ec9a0; --bad: #ff7a6b;
+      --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+      --ease: cubic-bezier(.22, 1, .36, 1);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-weight: 300; line-height: 1.7; }
+    a { color: var(--gold); }
+    :focus-visible { outline: 2px solid #f5b942; outline-offset: 3px; border-radius: 3px; }
+
+    .st { max-width: 44rem; margin: 0 auto; padding: clamp(3rem, 9vw, 6rem) 1.25rem 3rem; }
+    .kicker { font: 500 .72rem var(--mono); letter-spacing: .22em; text-transform: uppercase; color: var(--gold); margin: 0 0 1.6rem; }
+    h1 { font-weight: 200; font-size: clamp(2.3rem, 7vw, 3.9rem); line-height: 1.06; letter-spacing: -.035em; margin: 0 0 1.4rem; }
+    h1 em { font-style: normal; color: var(--gold); }
+    .lead { color: var(--mute); max-width: 31rem; font-size: 1.05rem; margin: 0; }
+
+    /* the gold spine */
+    .spine { position: relative; margin-top: clamp(3rem, 8vw, 5rem); padding-left: 2.2rem; }
+    .spine::before {
+      content: ""; position: absolute; left: .35rem; top: 0; bottom: 0; width: 1px;
+      background: linear-gradient(var(--gold), rgba(217, 178, 76, .06));
+      transform-origin: top; animation: draw 1.6s var(--ease) both;
+    }
+    @keyframes draw { from { transform: scaleY(0); } }
+    .sec { position: relative; padding-bottom: 3.4rem; animation: rise .9s var(--ease) both; animation-delay: calc(var(--i, 0) * .14s + .2s); }
+    @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+    .sec h2 { position: relative; margin: 0 0 1.5rem; font: 500 .74rem var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--mute); }
+    .sec h2::before {
+      content: ""; position: absolute; left: calc(-1.85rem - 4.5px); top: 50%; width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%;
+      background: var(--bg); border: 1px solid var(--gold); box-shadow: 0 0 0 4px var(--bg);
+    }
+
+    /* health */
+    .figs { display: grid; grid-template-columns: repeat(3, auto); gap: 1.2rem 3.2rem; justify-content: start; margin: 0; }
+    @media (max-width: 36rem) { .figs { grid-template-columns: 1fr; } }
+    .fig dt { font: 500 .66rem var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--mute); }
+    .fig dd { margin: .15rem 0 0; font-weight: 200; font-size: clamp(1.5rem, 4.6vw, 2.4rem); letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.25; }
+    .state { margin-top: 1.7rem; display: flex; align-items: center; flex-wrap: wrap; gap: .5rem .8rem; font: 400 .8rem var(--mono); color: var(--mute); }
+    .state .msg { display: inline-flex; align-items: flex-start; gap: .65rem; }
+    .state .d { width: .55rem; height: .55rem; margin-top: .5rem; border-radius: 50%; background: var(--mute); flex: none; }
+    .state.ok .d { background: var(--ok); animation: breathe 3.4s ease-in-out infinite; }
+    .state.bad .d { background: var(--bad); }
+    @keyframes breathe { 0% { box-shadow: 0 0 0 0 rgba(78, 201, 160, .5); } 60%, 100% { box-shadow: 0 0 0 7px rgba(78, 201, 160, 0); } }
+    .link { background: none; border: 0; padding: 0; font: inherit; color: var(--gold); cursor: pointer; border-bottom: 1px solid transparent; transition: border-color .25s ease; }
+    .link:hover { border-bottom-color: var(--gold); }
+
+    /* lists */
+    .kv { display: grid; grid-template-columns: minmax(0, 14rem) 1fr; margin: 0; font: 400 .84rem var(--mono); }
+    .kv dt, .kv dd { margin: 0; padding: .42rem 0; border-bottom: 1px solid var(--line); }
+    .kv dt { color: var(--mute); padding-right: 1rem; }
+    .kv dd { word-break: break-word; }
+    @media (max-width: 36rem) { .kv { grid-template-columns: 1fr; } .kv dt { border-bottom: 0; padding-bottom: 0; } }
+
+    .row { display: grid; grid-template-columns: 1fr auto; gap: 0 1.2rem; padding: .85rem 0; border-bottom: 1px solid var(--line); align-items: center; }
+    .row .k { font: 400 .85rem var(--mono); word-break: break-all; }
+    .row .d { grid-column: 1; color: var(--mute); font-size: .86rem; }
+    .row .s { grid-column: 2; grid-row: 1 / 3; font: 400 .8rem var(--mono); color: var(--mute); text-align: right; white-space: nowrap; }
+    .total { display: flex; justify-content: space-between; gap: 1rem; padding: .8rem 0 0; font: 500 .78rem var(--mono); color: var(--mute); letter-spacing: .06em; }
+    .none { color: var(--mute); margin: 0; }
+
+    .actions { margin-top: 2rem; display: flex; align-items: center; flex-wrap: wrap; gap: 1rem 1.4rem; }
+    .export {
+      display: inline-flex; align-items: center; gap: .75rem; font: 400 .98rem system-ui, sans-serif; letter-spacing: .01em; color: var(--ink);
+      background: transparent; border: 1px solid rgba(217, 178, 76, .6); border-radius: 999px; padding: .8rem 1.6rem; cursor: pointer;
+      transition: background .3s var(--ease), border-color .3s ease, transform .3s var(--ease), box-shadow .3s var(--ease);
+    }
+    .export .ar { display: inline-block; transition: transform .4s var(--ease); }
+    .export:hover:not(:disabled) { background: rgba(217, 178, 76, .1); border-color: var(--gold); box-shadow: 0 0 0 5px rgba(217, 178, 76, .08); }
+    .export:hover:not(:disabled) .ar { transform: translateY(3px); }
+    .export:active:not(:disabled) { transform: scale(.98); }
+    .export:disabled { opacity: .4; cursor: default; }
+    .done { margin: 0; font: 400 .8rem var(--mono); color: var(--ok); }
+    .note { margin: 1.6rem 0 0; padding-left: 1rem; border-left: 1px solid var(--gold); color: var(--mute); font-size: .9rem; max-width: 34rem; }
+
+    /* cloud plan */
+    .res { padding: .9rem 0; border-bottom: 1px solid var(--line); }
+    .res .t { font: 500 .66rem var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--mute); }
+    .res .n { font: 400 .95rem var(--mono); margin: .1rem 0 .5rem; word-break: break-all; }
+    .tags { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .tags span { border: 1px solid var(--line); border-radius: 999px; padding: .05rem .7rem; font: 400 .74rem var(--mono); color: var(--mute); }
+    .tags b { font-weight: 400; color: var(--ink); }
+    .cloud-note { color: var(--mute); font-size: .9rem; margin: 0 0 1rem; max-width: 34rem; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .spine::before, .sec, .state.ok .d { animation: none !important; }
+      .export, .export .ar, .link { transition: none; }
+    }
+  </style>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body class="sx" data-page="settings" data-no-statusbar>
+  <a class="sx-skip" href="#sx-main">Skip to content</a>
+  <header class="sx-header">
+    <div class="sx-wrap">
+      <a class="sx-brand" href="index.html"><img src="logo.svg" width="34" height="34" alt="Northlight Studio logo"><span>Northlight <b>Studio</b></span></a>
+      <button class="sx-toggle" id="sx-toggle" type="button" aria-expanded="false" aria-controls="sx-nav" aria-label="Menu"><span></span></button>
+      <nav class="sx-nav" id="sx-nav" aria-label="Main">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="helpdesk.html">Help desk</a></li>
+          <li><a href="crm.html">CRM</a></li>
+          <li><a href="troubleshoot.html">PC tools</a></li>
+          <li><a href="staff.html">Staff access</a></li>
+          <li><a href="track.html">Track</a></li>
+          <li><a href="automation.html">Automation</a></li>
+          <li><a href="logs.html">Logs</a></li><li><a href="cloud.html">Cloud</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="st" id="sx-main">
+    <p class="kicker">Data &amp; health</p>
+    <h1>Everything this site <em>knows</em>, in one place.</h1>
+    <p class="lead">Its version, its settings, what it keeps in this browser, and the cloud plan checked on every deploy.</p>
+
+    <div class="spine">
+      <section class="sec" style="--i:0" aria-labelledby="h-health">
+        <h2 id="h-health">Health</h2>
+        <dl class="figs">
+          <div class="fig"><dt>Name</dt><dd id="f-name">&ndash;</dd></div>
+          <div class="fig"><dt>Version</dt><dd id="f-version">&ndash;</dd></div>
+          <div class="fig"><dt>Built</dt><dd id="f-built">&ndash;</dd></div>
+        </dl>
+        <div class="state" id="state" role="status" aria-live="polite">
+          <span class="msg"><span class="d" aria-hidden="true"></span><span id="state-text">Checking health.json…</span></span>
+          <button class="link" id="recheck" type="button">Check again</button>
+        </div>
+      </section>
+
+      <section class="sec" style="--i:1" aria-labelledby="h-set">
+        <h2 id="h-set">Settings</h2>
+        <dl class="kv" id="settings"></dl>
+      </section>
+
+      <section class="sec" style="--i:2" aria-labelledby="h-data">
+        <h2 id="h-data">Your data</h2>
+        <div id="data"></div>
+        <div class="actions">
+          <button class="export" id="export" type="button">Export all data <span class="ar" aria-hidden="true">&darr;</span></button>
+          <p class="done" id="done" role="status" aria-live="polite" hidden></p>
+        </div>
+        <p class="note">The file holds every record stored in this browser, including the fake demo accounts' password hashes and one-time-code secrets. Keep it private. Nothing leaves this browser unless you share the file.</p>
+      </section>
+
+      <section class="sec" style="--i:3" aria-labelledby="h-cloud">
+        <h2 id="h-cloud">Cloud plan</h2>
+        <p class="cloud-note" id="cloud-note">Loading northlight.cloud.json…</p>
+        <div id="cloud"></div>
+        <p class="cloud-note" style="margin-top:1.2rem"><a href="cloud.html">Open the blueprint &rsaquo;</a></p>
+      </section>
+    </div>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="sitelog.js"></script>
+  <script src="settings.js"></script>
+  <script src="site.js"></script>
+</body>
+</html>

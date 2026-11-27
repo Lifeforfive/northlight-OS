@@ -8,7 +8,8 @@
 (function (root) {
   "use strict";
   var KEY = "northlight-logs-v1";
-  var MAX = 1000;
+  var cfg = root.NorthlightConfig;                       // config.js (loaded first)
+  var MAX = (cfg && cfg.logs && cfg.logs.maxEntries) || 1000;
   var counter = 0;
 
   function read() {

@@ -19,6 +19,7 @@
     staff:      { label: "Staff",      color: "#a78bfa" },
     track:      { label: "Tracker",    color: "#ff9a8d" },
     tools:      { label: "PC tools",   color: "#7fd1e8" },
+    cloud:      { label: "Cloud",      color: "#9fc3ee" },
     logs:       { label: "Logs",       color: "#f4f1ea" }
   };
   var LEVEL_MARK = { ok: "✓", info: "·", warn: "!", error: "✕" };

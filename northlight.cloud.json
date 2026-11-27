@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "description": "Cloud resources for the Northlight Studio website. A plan only: the site itself is hosted on GitHub Pages and none of these resources are created. tools/check-cloud.js checks the names and tags on every deploy.",
+  "location": "westeurope",
+  "resources": [
+    {
+      "type": "resourceGroup",
+      "name": "rg-northlight-prod",
+      "tags": {
+        "owner": "design-ops@northlight.example",
+        "env": "prod",
+        "cost-center": "CC-1042"
+      }
+    },
+    {
+      "type": "webApp",
+      "name": "app-northlight-prod",
+      "resourceGroup": "rg-northlight-prod",
+      "runtime": "static",
+      "tags": {
+        "owner": "design-ops@northlight.example",
+        "env": "prod",
+        "cost-center": "CC-1042"
+      }
+    },
+    {
+      "type": "storageAccount",
+      "name": "stnorthlightprod",
+      "resourceGroup": "rg-northlight-prod",
+      "sku": "Standard_LRS",
+      "tags": {
+        "owner": "design-ops@northlight.example",
+        "env": "prod",
+        "cost-center": "CC-1042"
+      }
+    }
+  ]
+}
